@@ -1,0 +1,1517 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Lakáshitel Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+/* Layout: control rail (left, scrolls) + results column (right). On phones: sticky key-number bar, results, then controls. */
+:root{
+  --paper:#eef2ee; --panel:#f8faf7; --ink:#14213d; --muted:#56627a; --line:#cfd8d1;
+  --accent:#0f7b6c; --accent-ink:#ffffff; --accent-soft:#d6ebe5;
+  --c-wekerle:#0f7b6c; --c-otthon:#2f6fd6; --c-csok:#7a4fd6; --c-babavaro:#d0467e; --c-market:#c97d06;
+  --c-interest:#c97d06; --c-forgiven:#7a4fd6; --c-house:#2f6fd6; --c-port:#0f7b6c; --c-rent:#8a8f98;
+  --ok:#1d7f4a; --warn:#a76400; --err:#b3261e; --warn-bg:#fbf0dc; --err-bg:#f9e2df; --info-bg:#e3ecf8;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Public Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --paper:#0e1416; --panel:#151d20; --ink:#e7eee9; --muted:#9aa8ad; --line:#2a373b;
+  --accent:#3cc2ac; --accent-ink:#06211c; --accent-soft:#163a35;
+  --c-wekerle:#3cc2ac; --c-otthon:#6ea2ff; --c-csok:#a98bff; --c-babavaro:#ff7aa8; --c-market:#f2a93b;
+  --c-interest:#f2a93b; --c-forgiven:#a98bff; --c-house:#6ea2ff; --c-port:#3cc2ac; --c-rent:#8f979e;
+  --ok:#5fd394; --warn:#f2b45a; --err:#ff8a80; --warn-bg:#33270f; --err-bg:#3a1a17; --info-bg:#172538;
+  color-scheme:dark }}
+:root[data-theme="dark"]{
+  --paper:#0e1416; --panel:#151d20; --ink:#e7eee9; --muted:#9aa8ad; --line:#2a373b;
+  --accent:#3cc2ac; --accent-ink:#06211c; --accent-soft:#163a35;
+  --c-wekerle:#3cc2ac; --c-otthon:#6ea2ff; --c-csok:#a98bff; --c-babavaro:#ff7aa8; --c-market:#f2a93b;
+  --c-interest:#f2a93b; --c-forgiven:#a98bff; --c-house:#6ea2ff; --c-port:#3cc2ac; --c-rent:#8f979e;
+  --ok:#5fd394; --warn:#f2b45a; --err:#ff8a80; --warn-bg:#33270f; --err-bg:#3a1a17; --info-bg:#172538;
+  color-scheme:dark }
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.45;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-block:0 40px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0}
+.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+button,select,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;padding-block:22px 14px;max-width:1440px;margin:0 auto}
+.brand h1{font-size:clamp(26px,4vw,38px);font-weight:800;letter-spacing:-.02em;line-height:1}
+.brand h1 span{color:var(--accent)}
+.brand p{margin:6px 0 0;color:var(--muted);max-width:60ch}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{border:1px solid var(--line);background:var(--panel);padding:7px 12px;border-radius:999px;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+.btn.small{padding:4px 10px;font-size:12px}
+.btn[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent)}
+
+.presets{max-width:1440px;margin:0 auto 14px;display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin}
+.preset{flex:0 0 auto;text-align:left;border:1px solid var(--line);background:var(--panel);border-radius:var(--r);padding:8px 12px;cursor:pointer;max-width:220px}
+.preset b{display:block;font-family:var(--f-display);font-weight:700;font-size:14px}
+.preset small{color:var(--muted);font-size:12px}
+.preset:hover,.preset.active{border-color:var(--accent);background:var(--accent-soft)}
+
+.sticky{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--paper);border-bottom:1px solid var(--line);
+  margin-left:calc(-1 * max(16px, env(safe-area-inset-left, 0px)));margin-right:calc(-1 * max(16px, env(safe-area-inset-right, 0px)));
+  padding:8px max(16px, env(safe-area-inset-right, 0px)) 8px max(16px, env(safe-area-inset-left, 0px));display:none}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--paper)}
+.sticky .row{display:flex;gap:14px;overflow-x:auto;font-size:12px}
+.sticky .row div{flex:0 0 auto}
+.sticky .row b{display:block;font-family:var(--f-mono);font-size:14px}
+
+.layout{max-width:1440px;margin:0 auto;display:grid;grid-template-columns:minmax(300px,380px) minmax(0,1fr);gap:20px;align-items:start}
+.controls{position:sticky;top:12px;max-height:calc(100vh - 24px);overflow-y:auto;padding-right:4px;scrollbar-width:thin}
+.results{min-width:0;display:flex;flex-direction:column;gap:16px}
+
+details.sec{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);margin-bottom:8px}
+details.sec>summary{list-style:none;cursor:pointer;padding:10px 14px;display:flex;align-items:center;gap:10px;font-family:var(--f-display);font-weight:700;font-size:15px}
+details.sec>summary::-webkit-details-marker{display:none}
+details.sec>summary .dot{width:10px;height:10px;border-radius:3px;flex:0 0 auto;background:var(--muted)}
+details.sec>summary .meta{margin-left:auto;font-family:var(--f-mono);font-weight:400;font-size:12px;color:var(--muted)}
+details.sec>summary::after{content:"+";font-family:var(--f-mono);color:var(--muted);width:12px;text-align:center}
+details.sec[open]>summary::after{content:"–"}
+.sec .body{padding:2px 14px 14px;display:flex;flex-direction:column;gap:12px}
+.sec .note{color:var(--muted);font-size:12px;margin:0}
+.sec.off .body .field:not(.master){opacity:.45}
+
+.field{display:flex;flex-direction:column;gap:4px}
+.field .lab{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.field label{font-weight:500}
+.field .val{display:flex;align-items:center;gap:4px}
+.field .val input{width:96px;text-align:right;border:1px solid var(--line);background:var(--paper);border-radius:6px;padding:2px 6px;font-family:var(--f-mono);font-size:13px}
+.field .val span{color:var(--muted);font-size:12px;font-family:var(--f-mono)}
+.field .help{color:var(--muted);font-size:12px}
+input[type=range]{width:100%;accent-color:var(--accent);height:22px;margin:0}
+select{border:1px solid var(--line);background:var(--paper);border-radius:6px;padding:5px 8px}
+.toggle{display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer}
+.toggle input{appearance:none;width:38px;height:22px;border-radius:999px;background:var(--line);position:relative;cursor:pointer;flex:0 0 auto;transition:background .15s}
+.toggle input::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:var(--panel);transition:transform .15s}
+.toggle input:checked{background:var(--accent)}
+.toggle input:checked::after{transform:translateX(16px)}
+.birth{display:grid;grid-template-columns:auto 1fr auto auto;gap:8px;align-items:center}
+.birth .tag{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px;min-width:0}
+.card h2{font-size:18px;font-weight:700;margin-bottom:10px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.card h2 small{font-family:var(--f-body);font-weight:400;color:var(--muted);font-size:13px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.kpi{background:var(--panel);padding:12px 14px;min-width:0}
+.kpi .k{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.kpi .v{font-family:var(--f-mono);font-size:22px;font-weight:500;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi .s{font-size:12px;color:var(--muted)}
+.kpi.hero .v{color:var(--accent)}
+
+.stack{display:flex;height:34px;border-radius:6px;overflow:hidden;border:1px solid var(--line)}
+.stack div{min-width:2px;position:relative}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:10px;font-size:13px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:10px;height:10px;border-radius:2px;display:inline-block}
+.legend b{font-family:var(--f-mono);font-weight:500}
+
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.chartbox{position:relative;height:340px;width:100%}
+.chart-controls{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:10px;font-size:13px;color:var(--muted)}
+
+.alerts{display:flex;flex-direction:column;gap:6px}
+.alert{border-radius:8px;padding:8px 12px;font-size:13px;border-left:4px solid}
+.alert.error{background:var(--err-bg);border-color:var(--err)}
+.alert.warn{background:var(--warn-bg);border-color:var(--warn)}
+.alert.info{background:var(--info-bg);border-color:var(--c-otthon)}
+
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{font-weight:600;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+td{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+td:first-child{font-family:var(--f-body)}
+.tablewrap{overflow-x:auto}
+.timeline{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px;max-height:300px;overflow:auto}
+.timeline li{display:grid;grid-template-columns:96px 1fr;gap:10px;padding:5px 0;border-bottom:1px dashed var(--line);font-size:13px}
+.timeline .when{font-family:var(--f-mono);color:var(--muted)}
+.chip{display:inline-block;padding:1px 7px;border-radius:999px;font-size:11px;font-weight:600;margin-right:6px}
+.chip.birth{background:var(--accent-soft);color:var(--accent)}
+.chip.forgive{background:color-mix(in srgb,var(--c-forgiven) 18%,transparent);color:var(--c-forgiven)}
+.chip.rate,.chip.penalty{background:var(--warn-bg);color:var(--warn)}
+.chip.sale{background:var(--info-bg);color:var(--c-otthon)}
+.chip.suspend{background:color-mix(in srgb,var(--c-babavaro) 16%,transparent);color:var(--c-babavaro)}
+.big{font-family:var(--f-mono);font-size:28px}
+.pos{color:var(--ok)} .neg{color:var(--err)}
+
+.saved{display:flex;flex-direction:column;gap:6px;max-height:260px;overflow:auto}
+.saved .item{display:flex;gap:8px;align-items:center;border:1px solid var(--line);border-radius:8px;padding:6px 10px}
+.saved .item b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.saved .item small{color:var(--muted);font-size:11px}
+.panel{position:fixed;inset:auto 0 0 0;z-index:20;background:var(--panel);border-top:1px solid var(--line);box-shadow:0 -10px 30px rgba(0,0,0,.18);
+  padding:16px max(16px, env(safe-area-inset-right, 0px)) calc(16px + env(safe-area-inset-bottom,0px)) max(16px, env(safe-area-inset-left, 0px));max-height:80vh;overflow:auto}
+.panel .inner{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+.panel textarea{width:100%;min-height:110px;font-family:var(--f-mono);font-size:12px;border:1px solid var(--line);background:var(--paper);border-radius:8px;padding:8px}
+.panel input[type=text]{border:1px solid var(--line);background:var(--paper);border-radius:8px;padding:7px 10px;flex:1;min-width:0}
+.rowflex{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:8px 14px;border-radius:999px;font-size:13px;z-index:30}
+footer{max-width:1440px;margin:24px auto 0;color:var(--muted);font-size:12px}
+.cmp-pick{margin-bottom:10px}
+.cmp-pick select{min-width:0;flex:1;max-width:340px}
+table.cmp th.a,table.cmp td.a{color:var(--accent)}
+table.cmp td.d{font-weight:500}
+table.cmp td.better{color:var(--ok)} table.cmp td.worse{color:var(--err)}
+.xlsteps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
+footer p{max-width:90ch}
+
+@media (max-width: 900px){
+  .layout{grid-template-columns:minmax(0,1fr)}
+  .controls{position:static;max-height:none;overflow:visible;order:2}
+  .results{order:1}
+  .sticky{display:block}
+  .chartbox{height:280px}
+}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+
+<div class="sticky" id="sticky"><div class="row" id="stickyRow"></div></div>
+
+<header class="top">
+  <div class="brand">
+    <h1>Lakáshitel <span>Lab</span></h1>
+    <p>Mennyi hitel kell a lakásvásárláshoz, melyik állami konstrukció mennyit visz belőle, és hogyan alakul a tartozás az évek során. A szabályok 2026. november 1-jei állapot szerint.</p>
+  </div>
+  <div class="toolbar">
+    <button class="btn" id="btnBaseline" title="A mostani beállítások rögzítése B változatként, összehasonlításhoz">Rögzítés B-nek</button>
+    <button class="btn" id="btnExcel" title="Táblázatos szöveg képletekkel, magyar Excelbe illeszthető">Másolás Excelbe</button>
+    <button class="btn" id="btnSaved">Mentett változatok</button>
+    <button class="btn primary" id="btnSave">Változat mentése</button>
+  </div>
+</header>
+
+<nav class="presets" id="presets" aria-label="Sablonok"></nav>
+
+<div class="layout">
+  <aside class="controls" id="controls" aria-label="Beállítások"></aside>
+
+  <main class="results">
+    <section class="kpis" id="kpis"></section>
+    <section class="alerts" id="alerts"></section>
+
+    <section class="card" id="cmpCard">
+      <h2>Összehasonlítás <small>A = a bal oldali, szerkeszthető beállítások</small></h2>
+      <div class="rowflex cmp-pick">
+        <label for="cmpSelect">B változat</label>
+        <select id="cmpSelect"></select>
+        <button class="btn small" id="cmpSwap" type="button">A ↔ B csere</button>
+      </div>
+      <div class="tablewrap" id="cmpWrap"><table id="cmpTable" class="cmp"></table></div>
+      <p class="note" id="cmpEmpty" style="color:var(--muted);margin:8px 0 0">Válassz B változatot (sablon, mentett változat vagy rögzített állapot). A diagramokon B szaggatott vonalként jelenik meg.</p>
+    </section>
+
+    <section class="card">
+      <h2>Miből jön össze a vételár <small id="needLine"></small></h2>
+      <div class="stack" id="fundStack"></div>
+      <div class="legend" id="fundLegend"></div>
+    </section>
+
+    <section class="card">
+      <div class="tabs" role="tablist" id="tabs"></div>
+      <div class="chartbox"><canvas id="chart" aria-label="Hitel diagram"></canvas></div>
+      <div class="chart-controls">
+        <label class="toggle" style="gap:8px"><input type="checkbox" id="realToggle"> Mai forintban (inflációval korrigálva)</label>
+        <span id="chartNote"></span>
+      </div>
+    </section>
+
+    <div class="two">
+      <section class="card">
+        <h2>Hitelek <small>a vizsgált időszakban</small></h2>
+        <div class="tablewrap"><table id="loanTable"></table></div>
+      </section>
+      <section class="card">
+        <h2>Idővonal <small>születések, elengedések, kamatfordulók</small></h2>
+        <ul class="timeline" id="timeline"></ul>
+      </section>
+    </div>
+
+    <section class="card" id="saleCard" hidden>
+      <h2>Az ingatlan eladása <small id="saleWhen"></small></h2>
+      <div class="two" id="saleBody"></div>
+    </section>
+  </main>
+</div>
+
+<footer>
+  <p>Becslés, nem hitelajánlat. A szabályok a Wekerle Plusz (298/2026. Korm. rendelet), a kifutó Otthon Start, a CSOK Plusz, a falusi CSOK és a Babaváró közzétett feltételeit követik. A valós hitelösszeget a banki értékbecslés, a KHR-státusz és a bank saját hitelbírálata dönti el. Az eladáskori visszafizetési időszak és a kamattámogatás referenciakamata a „Feltételezések” résznél állítható.</p>
+</footer>
+
+<div class="panel" id="savePanel" hidden>
+  <div class="inner">
+    <div class="rowflex"><h2 style="font-size:18px;flex:1">Mentett változatok</h2><span id="storeNote" class="note" style="color:var(--muted);font-size:12px"></span><button class="btn small" data-close>Bezárás</button></div>
+    <div class="rowflex"><input type="text" id="saveName" placeholder="Adj nevet, pl. kispesti lakás, 2 gyerek"><button class="btn primary" id="saveConfirm">Mentés</button></div>
+    <div class="saved" id="savedList"></div>
+    <details><summary style="cursor:pointer;color:var(--muted)">Exportálás / importálás szövegként</summary>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
+        <textarea id="ioText" spellcheck="false" aria-label="Forgatókönyv JSON"></textarea>
+        <div class="rowflex"><button class="btn small" id="exportBtn">Jelenlegi változat másolása</button><button class="btn small" id="importBtn">Betöltés szövegből</button></div>
+      </div>
+    </details>
+  </div>
+</div>
+<div class="panel" id="xlPanel" hidden>
+  <div class="inner">
+    <div class="rowflex"><h2 style="font-size:18px;flex:1">Másolás Excelbe</h2><button class="btn small" id="xlClose">Bezárás</button></div>
+    <p class="note" id="xlStatus" style="margin:0"></p>
+    <ol class="xlsteps">
+      <li>Nyiss egy üres munkalapot magyar nyelvű Excelben, és kattints az <b>A1</b> cellára.</li>
+      <li>Illeszd be (Ctrl+V). A képletek magyar függvénynevekkel és pontosvesszővel készültek.</li>
+      <li>A havi táblázat utolsó képletsorát (vagy mindhármat) jelöld ki, és húzd lefelé a futamidő végéig (pl. 300 sor). Az összesítők már a teljes tartományt figyelik.</li>
+    </ol>
+    <textarea id="xlText" spellcheck="false" aria-label="Excel szöveg" readonly></textarea>
+    <div class="rowflex"><button class="btn primary" id="xlCopy">Másolás újra</button><span class="note" style="color:var(--muted);font-size:12px">Angol nyelvű Excelben a függvénynevek nem működnek.</span></div>
+  </div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+/* Hungarian home-loan simulation engine. Pure functions, no DOM.
+   All money in HUF, rates in % per year, time in months from purchase. */
+(function (root) {
+  'use strict';
+
+  var FALUSI_TABLE = {
+    // purpose: [1 child, 2 children, 3+ children]
+    'new':    [1000000, 4000000, 15000000],
+    'used':   [1000000, 4000000, 15000000],
+    'modern': [600000, 2000000, 7500000]
+  };
+  var FALUSI_DEADLINE_YEARS = [4, 8, 10]; // for 1, 2, 3 committed children
+
+  function defaults() {
+    return {
+      price: 60000000, isNew: false, kind: 'flat', falusiEligible: false,
+      cash: 15000000, investPile: 0,
+      dutyPct: 4, dutyExempt: false, closingPct: 1.5,
+      horizonYears: 30,
+      referenceRate: 5.96,        // state reference rate (ÁKK 5y yield avg + 0.5)
+      prepayFeePct: 1,
+      wekerle:   { on: true,  amount: 40000000, rate: 5, term: 25, clawbackYears: 5 },
+      otthon:    { on: false, amount: 40000000, rate: 3, term: 25, clawbackYears: 5 },
+      csok:      { on: false, amount: 15000000, rate: 3, term: 25, interestOnlyFirstYear: true, suspendOnFirst: true, clawbackYears: 25 },
+      falusi:    { on: false, purpose: 'new', clawbackYears: 10 },
+      babavaro:  { on: false, amount: 11000000, term: 20, feePct: 0.5, refRate: 6.46, toHouse: true },
+      market:    { on: true, auto: true, amount: 0, rate: 6.5, term: 25, fixYears: 10, rateAfter: 7 },
+      relief:    { on: false },
+      children:  { existing: 0, births: [] },   // births: years after purchase
+      invest:    { returnPct: 6, monthlyBudget: 400000, budgetGrowthPct: 3, surplus: 'invest' },
+      house:     { appreciationPct: 4, maintenancePct: 0.5 },
+      sale:      { on: false, year: 10, costPct: 3 },
+      penaltyPct: 10.5,           // MNB base rate 5.5% + 5pp
+      rent:      { on: true, monthly: 250000, growthPct: 4 },
+      inflationPct: 4,
+      income:    { net: 900000 }
+    };
+  }
+
+  function mf(x, d) { return (x / 1e6).toLocaleString('hu-HU', { minimumFractionDigits: d, maximumFractionDigits: d }); }
+  function clone(o) { return JSON.parse(JSON.stringify(o)); }
+
+  function merge(base, over) {
+    var out = clone(base);
+    if (!over) return out;
+    Object.keys(over).forEach(function (k) {
+      var v = over[k];
+      if (v === undefined) return;
+      if (v && typeof v === 'object' && !Array.isArray(v) && out[k] && typeof out[k] === 'object' && !Array.isArray(out[k])) {
+        out[k] = merge(out[k], v);
+      } else {
+        out[k] = clone(v === undefined ? out[k] : v);
+      }
+    });
+    return out;
+  }
+
+  function pmt(balance, annualPct, n) {
+    if (n <= 0) return balance;
+    var r = annualPct / 1200;
+    if (r === 0) return balance / n;
+    return balance * r / (1 - Math.pow(1 + r, -n));
+  }
+
+  function csokCap(totalChildren, planned) {
+    if (planned < 1) return 0;
+    if (totalChildren >= 3) return 50000000;
+    if (totalChildren === 2) return 30000000;
+    return 15000000;
+  }
+
+  function falusiGrant(purpose, children) {
+    var t = FALUSI_TABLE[purpose] || FALUSI_TABLE['new'];
+    if (children <= 0) return 0;
+    return t[Math.min(children, 3) - 1];
+  }
+
+  function jtmLimitPct(net) { return net >= 800000 ? 60 : 50; }
+
+  function priceCap(kind) { return kind === 'house' ? 150000000 : 100000000; }
+
+  function simulate(input) {
+    var p = merge(defaults(), input || {});
+    var warnings = [];
+    var events = [];
+    var births = (p.children.births || []).map(Number).filter(function (y) { return y >= 0; }).sort(function (a, b) { return a - b; });
+    var birthMonths = births.map(function (y) { return Math.max(1, Math.round(y * 12)); });
+    var existing = Math.max(0, Math.round(p.children.existing || 0));
+    var totalChildren = existing + births.length;
+
+    /* ---------- funding ---------- */
+    var dutyAuto = !!(p.csok.on || (p.falusi.on && p.falusiEligible));
+    var dutyPct = (p.dutyExempt || dutyAuto) ? 0 : p.dutyPct;
+    var duty = p.price * dutyPct / 100;
+    var closing = p.price * p.closingPct / 100;
+    var need = p.price + duty + closing;
+    var investPile = Math.min(Math.max(0, p.investPile), p.cash);
+    var cashToHouse = Math.max(0, p.cash - investPile);
+
+    var grant = 0;
+    if (p.falusi.on) {
+      if (!p.falusiEligible) warnings.push({ level: 'error', text: 'A falusi CSOK csak a kedvezményezett kistelepülések listáján igényelhető. Kapcsold be a „Kedvezményezett kistelepülés” opciót, vagy kapcsold ki a falusi CSOK-ot.' });
+      grant = p.falusiEligible ? falusiGrant(p.falusi.purpose, totalChildren) : 0;
+      if (totalChildren === 0) warnings.push({ level: 'error', text: 'A falusi CSOK-hoz legalább egy meglévő vagy vállalt gyermek kell.' });
+      for (var i = 0; i < births.length && i < 3; i++) {
+        var dl = FALUSI_DEADLINE_YEARS[Math.min(births.length, 3) - 1];
+        if (births[i] > dl) { warnings.push({ level: 'warn', text: 'Falusi CSOK: a(z) ' + (i + 1) + '. vállalt gyermek a ' + dl + ' éves határidő után születik, a rá eső támogatást vissza kell fizetni.' }); break; }
+      }
+    }
+
+    var loans = [];
+    function addLoan(key, label, amount, rate, termY, extra) {
+      if (!(amount > 0)) return null;
+      var l = {
+        key: key, label: label, principal: amount, balance: amount, rate: rate,
+        n: Math.round(termY * 12), suspend: 0, io: 0,
+        interestCum: 0, feeCum: 0, principalCum: 0, forgivenCum: 0, paidCum: 0,
+        subsidyPct: 0, subsidyAccrued: 0, mortgage: true, clawbackYears: 0
+      };
+      Object.keys(extra || {}).forEach(function (k) { l[k] = extra[k]; });
+      loans.push(l);
+      return l;
+    }
+
+    var wek = null, ots = null, csk = null, bbv = null, mkt = null;
+
+    if (p.wekerle.on) {
+      var wAmt = Math.min(p.wekerle.amount, 50000000);
+      if (p.wekerle.amount > 50000000) warnings.push({ level: 'warn', text: 'A Wekerle Plusz legfeljebb 50 M Ft lehet; ennyire korlátoztuk.' });
+      if (p.wekerle.term > 25) warnings.push({ level: 'warn', text: 'A Wekerle Plusz támogatott futamideje legfeljebb 25 év.' });
+      if (p.price > priceCap(p.kind)) warnings.push({ level: 'error', text: 'A Wekerle Plusz árkorlátja ' + (p.kind === 'house' ? 'háznál' : 'lakásnál') + ' ' + (priceCap(p.kind) / 1e6) + ' M Ft.' });
+      if (p.csok.on || p.falusi.on) warnings.push({ level: 'error', text: 'A Wekerle Plusz ugyanarra a vásárlásra nem kombinálható a CSOK Plusszal vagy a falusi CSOK-kal.' });
+      if (p.otthon.on) warnings.push({ level: 'error', text: 'A Wekerle Plusz és az Otthon Start egymást kizárja, válassz egyet.' });
+      wek = addLoan('wekerle', 'Wekerle Plusz', wAmt, p.wekerle.rate, Math.min(p.wekerle.term, 25),
+        { subsidyPct: Math.max(0, p.referenceRate - p.wekerle.rate), clawbackYears: p.wekerle.clawbackYears });
+    }
+    if (p.otthon.on) {
+      warnings.push({ level: 'info', text: 'Otthon Start: csak 2026. október 31-ig aláírt adásvételi szerződéssel és 2026. november 15-ig beadott igényléssel.' });
+      ots = addLoan('otthon', 'Otthon Start', Math.min(p.otthon.amount, 50000000), p.otthon.rate, Math.min(p.otthon.term, 25),
+        { subsidyPct: Math.max(0, p.referenceRate - p.otthon.rate), clawbackYears: p.otthon.clawbackYears });
+    }
+    if (p.csok.on) {
+      var cap = csokCap(totalChildren, births.length);
+      if (births.length < 1) warnings.push({ level: 'error', text: 'A CSOK Plusz legalább egy új gyermek vállalását kéri (adj hozzá egy tervezett születést).' });
+      var cAmt = Math.min(p.csok.amount, cap);
+      if (p.csok.amount > cap && births.length >= 1) warnings.push({ level: 'warn', text: 'A CSOK Plusz ' + totalChildren + ' gyermekkel legfeljebb ' + (cap / 1e6) + ' M Ft; ennyire korlátoztuk.' });
+      if (p.csok.term < 10) warnings.push({ level: 'warn', text: 'A CSOK Plusz futamideje legalább 10 év.' });
+      csk = addLoan('csok', 'CSOK Plusz', cAmt, p.csok.rate, Math.min(p.csok.term, 25),
+        { subsidyPct: Math.max(0, p.referenceRate - p.csok.rate), clawbackYears: p.csok.clawbackYears });
+      if (csk && p.csok.interestOnlyFirstYear) csk.io = 12;
+    }
+    var babavaroToPortfolio = 0;
+    if (p.babavaro.on) {
+      var bAmt = Math.min(p.babavaro.amount, 11000000);
+      if (p.babavaro.amount > 11000000) warnings.push({ level: 'warn', text: 'A Babaváró legfeljebb 11 M Ft lehet.' });
+      bbv = addLoan('babavaro', 'Babaváró', bAmt, 0, Math.min(p.babavaro.term, 20), { mortgage: false });
+      if (!p.babavaro.toHouse) babavaroToPortfolio = bAmt;
+    }
+
+    var fixedSources = cashToHouse + grant
+      + (wek ? wek.principal : 0) + (ots ? ots.principal : 0) + (csk ? csk.principal : 0)
+      + (bbv && p.babavaro.toHouse ? bbv.principal : 0);
+
+    if (p.market.on) {
+      var mAmt = p.market.auto ? Math.max(0, need - fixedSources) : Math.max(0, p.market.amount);
+      mkt = addLoan('market', 'Piaci hitel', mAmt, p.market.rate, p.market.term, {});
+    }
+
+    var totalSources = fixedSources + (mkt ? mkt.principal : 0) + 0;
+    var surplusFunding = Math.max(0, totalSources - need);
+    var shortfall = Math.max(0, need - totalSources);
+    if (shortfall > 1) warnings.push({ level: 'error', text: 'Finanszírozási hiány: ' + Math.round(shortfall).toLocaleString('hu-HU') + ' Ft. Növeld az önerőt, vegyél fel hitelt, vagy kapcsold be a piaci hitelt.' });
+
+    var mortgageTotal = loans.filter(function (l) { return l.mortgage; }).reduce(function (s, l) { return s + l.principal; }, 0);
+    var ltv = p.price > 0 ? mortgageTotal / p.price * 100 : 0;
+    var subsidisedOnly = !mkt || mkt.principal === 0;
+    if (ltv > 90.0001) warnings.push({ level: 'error', text: 'A jelzáloghitelek a vételár ' + ltv.toFixed(0) + '%-át adják. Támogatott hitel mellett is legalább 10% önerő kell.' });
+    else if (ltv > 80.0001 && !subsidisedOnly) warnings.push({ level: 'warn', text: 'A hitelfedezeti arány ' + ltv.toFixed(0) + '%. Piaci jelzáloghitel legfeljebb 80%-ig adható; e fölött csak állami támogatott hitel segít.' });
+
+    /* ---------- monthly simulation ---------- */
+    // contractual first instalment (ignores birth-triggered pauses) for the JTM check
+    var contractualPayment = loans.reduce(function (s, l) {
+      var base = l.io > 0 ? l.balance * l.rate / 1200 : pmt(l.balance, l.rate, l.n);
+      return s + base + (l.key === 'babavaro' ? l.balance * p.babavaro.feePct / 1200 : 0);
+    }, 0);
+
+    var H = Math.round(p.horizonYears * 12);
+    var saleMonth = p.sale.on ? Math.max(1, Math.round(p.sale.year * 12)) : null;
+    if (saleMonth && saleMonth < H) H = saleMonth;
+
+    var portfolio = investPile + surplusFunding + babavaroToPortfolio;
+    var rentPortfolio = p.cash;
+    var houseValue = p.price;
+    var budget = p.invest.monthlyBudget;
+    var rent = p.rent.monthly;
+    var rRet = p.invest.returnPct / 1200;
+    var newBirthCount = 0;
+    var bbvConverted = false;
+    var series = [];
+    var initialPayment = null;
+    var sale = null;
+    var maintenanceCum = 0;
+
+    function liveLoans() { return loans.filter(function (l) { return l.balance > 0.5 || (l.deferred || 0) > 0.5 || (l.paybackLeft || 0) > 0.5; }); }
+
+    for (var m = 1; m <= H; m++) {
+      /* --- events at start of month --- */
+      if (mkt && p.market.fixYears > 0 && m === Math.round(p.market.fixYears * 12) + 1 && mkt.balance > 0.5 && p.market.rateAfter !== mkt.rate) {
+        events.push({ month: m, type: 'rate', text: 'Piaci hitel kamatfordulója: ' + mkt.rate.toLocaleString('hu-HU') + '% → ' + p.market.rateAfter.toLocaleString('hu-HU') + '%' });
+        mkt.rate = p.market.rateAfter;
+      }
+      if (bbv && !bbvConverted && m === 61 && newBirthCount === 0) {
+        bbvConverted = true;
+        var payback = bbv.subsidyAccrued;
+        bbv.paybackLeft = payback; bbv.paybackInstal = payback / 24;
+        bbv.clawbackPaid = payback;
+        bbv.rate = p.babavaro.refRate;
+        events.push({ month: m, type: 'penalty', text: 'Babaváró: 5 év alatt nem született gyermek, a kamattámogatást (' + Math.round(payback).toLocaleString('hu-HU') + ' Ft) 24 hónap alatt vissza kell fizetni, a hitel kamatozóvá válik' });
+      }
+      for (var b = 0; b < birthMonths.length; b++) {
+        if (birthMonths[b] !== m) continue;
+        newBirthCount++;
+        var familyIndex = existing + newBirthCount;
+        events.push({ month: m, type: 'birth', text: 'Gyermek születik (' + newBirthCount + '. új, a családban a ' + familyIndex + '.)' });
+        var csokForgave = false;
+        if (csk && csk.balance > 0.5) {
+          if (newBirthCount === 1 && p.csok.suspendOnFirst) {
+            csk.suspend = Math.max(csk.suspend, 12);
+            events.push({ month: m, type: 'suspend', loan: 'csok', months: 12, text: 'CSOK Plusz: 12 hónap törlesztési szünet' });
+          } else if (newBirthCount >= 2) {
+            var f = Math.min(10000000, csk.balance);
+            csk.balance -= f; csk.forgivenCum += f; csokForgave = true;
+            events.push({ month: m, type: 'forgive', loan: 'csok', amount: f, text: 'CSOK Plusz: ' + mf(f, 1) + ' M Ft elengedés' });
+          }
+        }
+        if (bbv && bbv.balance > 0.5) {
+          if (newBirthCount === 1) {
+            if (bbvConverted) bbv.rate = 0;
+            bbv.suspend = Math.max(bbv.suspend, 36);
+            events.push({ month: m, type: 'suspend', loan: 'babavaro', months: 36, text: 'Babaváró: véglegesen kamatmentes, 3 év törlesztési szünet' });
+          } else if (newBirthCount === 2) {
+            var f2 = bbv.balance * 0.3;
+            bbv.balance -= f2; bbv.forgivenCum += f2; bbv.suspend = Math.max(bbv.suspend, 36);
+            events.push({ month: m, type: 'forgive', loan: 'babavaro', amount: f2, months: 36, text: 'Babaváró: 30% elengedés (' + mf(f2, 2) + ' M Ft), újabb szünet' });
+          } else if (newBirthCount === 3) {
+            var f3 = bbv.balance;
+            bbv.balance = 0; bbv.forgivenCum += f3;
+            events.push({ month: m, type: 'forgive', loan: 'babavaro', amount: f3, text: 'Babaváró: a maradék ' + mf(f3, 2) + ' M Ft elengedése' });
+          }
+        }
+        if (p.relief.on && !csokForgave && familyIndex >= 2) {
+          var amt = familyIndex === 3 ? 4000000 : 1000000;
+          var target = [mkt, wek, ots].filter(function (l) { return l && l.balance > 0.5; })[0];
+          if (target) {
+            var fr = Math.min(amt, target.balance);
+            target.balance -= fr; target.forgivenCum += fr;
+            events.push({ month: m, type: 'forgive', loan: target.key, amount: fr, text: 'Jelzáloghitel-elengedés: ' + mf(fr, 1) + ' M Ft a(z) ' + target.label + ' tartozásából' });
+          }
+        }
+      }
+
+      /* --- payments --- */
+      var monthPay = 0, monthInterest = 0;
+      liveLoans().forEach(function (l) {
+        var before = l.balance;
+        if (l.key === 'babavaro') {
+          if (!bbvConverted && newBirthCount === 0) l.subsidyAccrued += before * p.babavaro.refRate / 1200;
+        } else {
+          l.subsidyAccrued = l.subsidyAccrued * (1 + p.penaltyPct / 1200) + before * l.subsidyPct / 1200;
+        }
+        var fee = l.key === 'babavaro' ? before * p.babavaro.feePct / 1200 : 0;
+        var interest = before * l.rate / 1200;
+        if (before <= 0.5 && l.suspend === 0) {
+          var ex = 0;
+          if (l.deferred > 0) { var d0 = Math.min(l.deferred, l.deferredInstal || l.deferred); l.deferred -= d0; ex += d0; }
+          if (l.paybackLeft > 0) { var q0 = Math.min(l.paybackLeft, l.paybackInstal); l.paybackLeft -= q0; ex += q0; l.feeCum += q0; }
+          l.paidCum += ex; l.lastPay = ex; monthPay += ex;
+          return;
+        }
+        if (l.suspend > 0) {
+          l.suspend--;
+          if (l.key === 'csok' && interest > 0) { l.deferred = (l.deferred || 0) + interest; l.interestCum += interest; }
+          if (l.suspend === 0 && l.deferred > 0) l.deferredInstal = l.deferred / 12;
+          return;
+        }
+        var pay, principal;
+        if (l.io > 0) { pay = interest; principal = 0; l.io--; }
+        else {
+          pay = pmt(before, l.rate, l.n);
+          principal = pay - interest;
+          if (principal > before) { principal = before; pay = before + interest; }
+          l.n = Math.max(0, l.n - 1);
+          if (l.n === 0) { principal = before; pay = before + interest; }
+        }
+        l.balance = before - principal;
+        var extra = 0;
+        if (l.deferred > 0) { var d = Math.min(l.deferred, l.deferredInstal || l.deferred); l.deferred -= d; extra += d; }
+        if (l.paybackLeft > 0) { var q = Math.min(l.paybackLeft, l.paybackInstal); l.paybackLeft -= q; extra += q; l.feeCum += q; }
+        pay += extra;
+        l.interestCum += interest; l.feeCum += fee; l.principalCum += principal;
+        l.paidCum += pay + fee;
+        l.lastPay = pay + fee;
+        monthPay += pay + fee; monthInterest += interest + fee;
+      });
+      if (initialPayment === null) initialPayment = monthPay;
+
+      /* --- house & budget --- */
+      houseValue *= Math.pow(1 + p.house.appreciationPct / 100, 1 / 12);
+      var maint = houseValue * p.house.maintenancePct / 1200;
+      maintenanceCum += maint;
+      if (m > 1 && (m - 1) % 12 === 0) {
+        budget *= 1 + p.invest.budgetGrowthPct / 100;
+        rent *= 1 + p.rent.growthPct / 100;
+      }
+      var surplus = budget - monthPay - maint;
+      portfolio *= 1 + rRet;
+      if (surplus > 0 && p.invest.surplus === 'prepay') {
+        var tgt = liveLoans().filter(function (l) { return l.balance > 0.5 && l.rate > 0 && l.suspend === 0; })
+          .sort(function (a, b2) { return b2.rate - a.rate; })[0];
+        if (tgt) {
+          var pp = Math.min(surplus, tgt.balance);
+          tgt.balance -= pp; tgt.principalCum += pp; tgt.paidCum += pp; tgt.prepaidCum = (tgt.prepaidCum || 0) + pp;
+          surplus -= pp;
+        }
+      }
+      portfolio += surplus;
+      rentPortfolio = rentPortfolio * (1 + rRet) + (budget - rent);
+
+      var debt = loans.reduce(function (s, l) { return s + Math.max(0, l.balance); }, 0);
+      var row = {
+        month: m, payment: monthPay, interest: monthInterest, maintenance: maint, budget: budget, rent: rent,
+        houseValue: houseValue, portfolio: portfolio, debt: debt,
+        netWorth: houseValue + portfolio - debt, rentNetWorth: rentPortfolio,
+        balances: {}, payments: {}, interestCum: {}, forgivenCum: {}
+      };
+      loans.forEach(function (l) {
+        row.balances[l.key] = Math.max(0, l.balance);
+        row.payments[l.key] = l.lastPay || 0;
+        row.interestCum[l.key] = l.interestCum + l.feeCum;
+        row.forgivenCum[l.key] = l.forgivenCum;
+        l.lastPay = 0;
+      });
+      series.push(row);
+
+      /* --- sale --- */
+      if (saleMonth && m === saleMonth) {
+        var saleCost = houseValue * p.sale.costPct / 100;
+        var clawbacks = [];
+        var mortgageBal = 0, prepayFees = 0;
+        loans.forEach(function (l) {
+          if (!l.mortgage) return;
+          mortgageBal += l.balance;
+          prepayFees += l.balance * p.prepayFeePct / 100;
+          if (l.subsidyPct > 0 && m <= l.clawbackYears * 12 && l.subsidyAccrued > 0) {
+            clawbacks.push({ label: l.label + ' kamattámogatás + büntetőkamat', amount: l.subsidyAccrued });
+          }
+        });
+        if (grant > 0 && m <= p.falusi.clawbackYears * 12) clawbacks.push({ label: 'Falusi CSOK támogatás', amount: grant });
+        var clawTotal = clawbacks.reduce(function (s, c) { return s + c.amount; }, 0);
+        var proceeds = houseValue - saleCost - mortgageBal - prepayFees - clawTotal;
+        var purchaseCost = p.price + duty + closing;
+        var propertyGain = houseValue - saleCost - purchaseCost;
+        var cashIn = cashToHouse + loans.filter(function (l) { return l.mortgage; }).reduce(function (s, l) { return s + l.paidCum; }, 0);
+        sale = {
+          month: m, salePrice: houseValue, saleCost: saleCost, mortgageBalance: mortgageBal,
+          prepayFees: prepayFees, clawbacks: clawbacks, clawbackTotal: clawTotal,
+          proceeds: proceeds, propertyGain: propertyGain, cashIn: cashIn, cashResult: proceeds - cashIn
+        };
+        events.push({ month: m, type: 'sale', text: 'Eladás ' + mf(houseValue, 1) + ' M Ft-ért; nettó bevétel ' + mf(proceeds, 1) + ' M Ft' });
+        portfolio += proceeds;
+        loans.forEach(function (l) { if (l.mortgage) l.balance = 0; });
+        houseValue = 0;
+        var debtAfter = loans.reduce(function (s, l) { return s + Math.max(0, l.balance); }, 0);
+        row.portfolio = portfolio; row.houseValue = 0; row.debt = debtAfter;
+        row.netWorth = portfolio - debtAfter;
+        loans.forEach(function (l) { row.balances[l.key] = Math.max(0, l.balance); });
+      }
+    }
+
+    /* ---------- summary ---------- */
+    var totals = { interest: 0, fees: 0, forgiven: 0, paid: 0, principal: 0 };
+    var perLoan = loans.map(function (l) {
+      totals.interest += l.interestCum; totals.fees += l.feeCum; totals.forgiven += l.forgivenCum;
+      totals.paid += l.paidCum; totals.principal += l.principal;
+      return {
+        key: l.key, label: l.label, principal: l.principal, rate: l.rate, interest: l.interestCum, fees: l.feeCum,
+        forgiven: l.forgivenCum, paid: l.paidCum, remaining: Math.max(0, l.balance),
+        subsidyAccrued: l.subsidyAccrued, clawbackPaid: l.clawbackPaid || 0
+      };
+    });
+    var jtmLimit = jtmLimitPct(p.income.net);
+    var jtm = p.income.net > 0 ? Math.max(initialPayment || 0, contractualPayment) / p.income.net * 100 : 0;
+    if (jtm > jtmLimit) warnings.push({ level: 'error', text: 'Az induló törlesztő a nettó jövedelem ' + jtm.toFixed(0) + '%-a; a jövedelemarányos törlesztési korlát (JTM) ' + jtmLimit + '%.' });
+    var last = series[series.length - 1] || {};
+
+    return {
+      params: p,
+      funding: {
+        need: need, price: p.price, duty: duty, closing: closing,
+        cashToHouse: cashToHouse, investPile: investPile, grant: grant,
+        loans: loans.map(function (l) { return { key: l.key, label: l.label, amount: l.principal }; }),
+        babavaroToHouse: !!(bbv && p.babavaro.toHouse), surplus: surplusFunding, shortfall: shortfall, ltv: ltv
+      },
+      perLoan: perLoan, totals: totals, initialPayment: initialPayment || 0,
+      jtm: jtm, jtmLimit: jtmLimit, maxPaymentByJtm: p.income.net * jtmLimit / 100,
+      series: series, events: events, warnings: warnings, sale: sale,
+      end: { month: last.month || 0, netWorth: last.netWorth || 0, rentNetWorth: last.rentNetWorth || 0, portfolio: last.portfolio || 0, houseValue: last.houseValue || 0, debt: last.debt || 0 },
+      maintenance: maintenanceCum
+    };
+  }
+
+  var api = { defaults: defaults, merge: merge, simulate: simulate, pmt: pmt, csokCap: csokCap, falusiGrant: falusiGrant, jtmLimitPct: jtmLimitPct, priceCap: priceCap, FALUSI_TABLE: FALUSI_TABLE };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  root.HLEngine = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+(function(){
+'use strict';
+var E = window.HLEngine;
+var M = 1e6;
+
+/* ---------------- presets ---------------- */
+var PRESETS = [
+  { id:'young-used', name:'Használt lakás · Wekerle 5%', sub:'Pár, első otthon, 55 M Ft', p:{ price:55*M, isNew:false, kind:'flat', cash:12*M,
+      wekerle:{on:true, amount:46*M, autoRate:true, term:25}, market:{on:true,auto:true}, income:{net:900000}, invest:{monthlyBudget:380000} } },
+  { id:'newbuild', name:'Új építésű · Wekerle 3%', sub:'75 M Ft-os új lakás', p:{ price:75*M, isNew:true, kind:'flat', cash:16*M, dutyExempt:false,
+      wekerle:{on:true, amount:50*M, autoRate:true, term:25}, market:{on:true,auto:true}, income:{net:1100000}, invest:{monthlyBudget:450000} } },
+  { id:'family', name:'Család · CSOK Plusz + Babaváró', sub:'1 gyerek most, 2 tervezett', p:{ price:85*M, isNew:false, kind:'house', cash:10*M, dutyExempt:true,
+      wekerle:{on:false}, csok:{on:true, amount:50*M, term:25}, babavaro:{on:true, amount:11*M, toHouse:true},
+      market:{on:true,auto:true}, children:{existing:1, births:[1.5, 4]}, income:{net:1000000}, invest:{monthlyBudget:420000} } },
+  { id:'village', name:'Falu · falusi CSOK', sub:'Támogatás + CSOK Plusz, 45 M Ft-os ház', p:{ price:45*M, isNew:true, kind:'house', falusiEligible:true, cash:6*M, dutyExempt:true,
+      wekerle:{on:false}, falusi:{on:true, purpose:'new'}, csok:{on:true, amount:25*M, term:25}, market:{on:true,auto:true},
+      children:{existing:1, births:[2, 5]}, income:{net:750000}, invest:{monthlyBudget:300000}, house:{appreciationPct:3} } },
+  { id:'market', name:'Csak piaci hitel', sub:'Nem jogosult támogatásra', p:{ price:60*M, isNew:false, cash:15*M, wekerle:{on:false}, market:{on:true,auto:true,rate:6.4,fixYears:10,rateAfter:7}, income:{net:1000000} } },
+  { id:'sell7', name:'Vétel, eladás 7 év után', sub:'Wekerle, használt lakás, majd költözés', p:{ price:55*M, isNew:false, cash:12*M, wekerle:{on:true, amount:46*M, autoRate:true}, market:{on:true,auto:true}, sale:{on:true, year:7, costPct:3} } },
+  { id:'investor', name:'Pénz befektetve marad', sub:'Több hitel, 10 M Ft befektetve', p:{ price:60*M, isNew:false, cash:25*M, investPile:10*M, wekerle:{on:true, amount:50*M, autoRate:true}, market:{on:true,auto:true}, invest:{returnPct:7, monthlyBudget:450000}, income:{net:1200000} } },
+  { id:'otthon', name:'Otthon Start (okt. 31-ig aláírva)', sub:'Kifutó, fix 3%', p:{ price:60*M, isNew:false, cash:12*M, wekerle:{on:false}, otthon:{on:true, amount:50*M, rate:3}, market:{on:true,auto:true} } }
+];
+
+function freshParams(over){
+  var base = E.merge(E.defaults(), { wekerle:{autoRate:true} });
+  return E.merge(base, over || {});
+}
+var state = freshParams(PRESETS[0].p);
+var activePreset = PRESETS[0].id;
+
+/* ---------------- helpers ---------------- */
+function get(o, path){ return path.split('.').reduce(function(a,k){ return a==null?a:a[k]; }, o); }
+function set(o, path, v){ var ks=path.split('.'), last=ks.pop(); var t=ks.reduce(function(a,k){ if(a[k]==null) a[k]={}; return a[k]; }, o); t[last]=v; }
+function huf(x){ return Math.round(x).toLocaleString('hu-HU') + ' Ft'; }
+function mft(x, d){ d = d==null?1:d; return (x/M).toLocaleString('hu-HU',{minimumFractionDigits:d,maximumFractionDigits:d}) + ' M Ft'; }
+function kft(x){ return Math.round(x/1000).toLocaleString('hu-HU') + ' e Ft'; }
+function css(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+function el(tag, attrs, html){ var e=document.createElement(tag); if(attrs) Object.keys(attrs).forEach(function(k){ if(k==='class') e.className=attrs[k]; else e.setAttribute(k, attrs[k]); }); if(html!=null) e.innerHTML=html; return e; }
+function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+function toast(msg){ var t=document.getElementById('toast'); t.textContent=msg; t.hidden=false; clearTimeout(toast._t); toast._t=setTimeout(function(){t.hidden=true;},2200); }
+
+var LOAN_COLORS = { wekerle:'--c-wekerle', otthon:'--c-otthon', csok:'--c-csok', babavaro:'--c-babavaro', market:'--c-market' };
+
+/* ---------------- control schema ---------------- */
+// type: money (M Ft), range, toggle, select, births
+var SECTIONS = [
+  { id:'property', title:'Az ingatlan', color:'--c-house', open:true, fields:[
+    {path:'price', label:'Vételár', type:'money', min:10, max:200, step:0.5},
+    {path:'isNew', label:'Új építésű', type:'toggle', help:'Wekerle Plusz: új lakásra 3%, használtra 5%.'},
+    {path:'kind', label:'Típus', type:'select', options:[['flat','Lakás (többlakásos épületben)'],['house','Családi ház']]},
+    {path:'falusiEligible', label:'Kedvezményezett kistelepülés (falusi CSOK lista)', type:'toggle'},
+    {path:'dutyExempt', label:'Illetékmentes', type:'toggle', help:'CSOK Plusszal vagy falusi CSOK-kal automatikusan. Egyéb mentességnél (pl. egyes új lakások) kapcsold be. A Wekerle Plusz nem ad mentességet.'},
+    {path:'dutyPct', label:'Vagyonszerzési illeték', type:'range', min:0, max:4, step:0.1, unit:'%'},
+    {path:'closingPct', label:'Ügyvéd, értékbecslés, díjak', type:'range', min:0, max:5, step:0.1, unit:'%'},
+    {path:'house.appreciationPct', label:'Éves áremelkedés', type:'range', min:-3, max:12, step:0.1, unit:'%'},
+    {path:'house.maintenancePct', label:'Éves fenntartás', type:'range', min:0, max:2, step:0.1, unit:'% az értékből'}
+  ]},
+  { id:'money', title:'Saját pénz', color:'--c-port', open:true, fields:[
+    {path:'cash', label:'Megtakarítás (elérhető önerő)', type:'money', min:0, max:100, step:0.5},
+    {path:'investPile', label:'Ebből befektetve marad', type:'money', min:0, max:100, step:0.5, help:'Ez a rész nem megy a lakásba, hanem az alábbi hozammal nő.'},
+    {path:'invest.returnPct', label:'Befektetési hozam', type:'range', min:0, max:15, step:0.1, unit:'% / év'},
+    {path:'invest.monthlyBudget', label:'Havi lakhatási keret', type:'kft', min:100, max:2000, step:5, help:'Amit a törlesztők és a fenntartás nem visznek el, az az alább választott helyre megy.'},
+    {path:'invest.budgetGrowthPct', label:'Keret növekedése (béremelés)', type:'range', min:0, max:12, step:0.1, unit:'% / év'},
+    {path:'invest.surplus', label:'A többlet megy', type:'select', options:[['invest','Befektetésbe'],['prepay','A legdrágább hitel előtörlesztésére']]},
+    {path:'income.net', label:'Háztartás nettó jövedelme', type:'kft', min:200, max:4000, step:10, help:'A jövedelemarányos törlesztési korláthoz (JTM): a nettó jövedelem 50%-a, 800 ezer Ft felett 60%.'}
+  ]},
+  { id:'wekerle', title:'Wekerle Plusz', color:'--c-wekerle', master:'wekerle.on', fields:[
+    {path:'wekerle.on', label:'Wekerle Plusz igénybevétele', type:'toggle', master:true},
+    {path:'wekerle.amount', label:'Összeg', type:'money', min:0, max:50, step:0.5},
+    {path:'wekerle.autoRate', label:'Kamat az új / használt szerint', type:'toggle'},
+    {path:'wekerle.rate', label:'Fix kamat', type:'range', min:1, max:5, step:0.05, unit:'%'},
+    {path:'wekerle.term', label:'Futamidő', type:'range', min:5, max:25, step:1, unit:'év'},
+    {path:'wekerle.clawbackYears', label:'Támogatás visszafizetendő, ha eladod ennyin belül', type:'range', min:0, max:25, step:1, unit:'év'},
+    {note:'18–45 év, első lakás, házastársak és élettársak együtt igénylik. Legfeljebb 50 M Ft, 25 év, legalább 10% önerő, legfeljebb 1,5 M Ft/m\u00b2. CSOK Plusszal és falusi CSOK-kal nem kombinálható, Babaváróval igen. Ha 5 éven belül eladod, kiadod vagy kiköltözöl, a kamattámogatást büntetőkamattal vissza kell fizetni.'}
+  ]},
+  { id:'otthon', title:'Otthon Start', color:'--c-otthon', master:'otthon.on', fields:[
+    {path:'otthon.on', label:'Otthon Start igénybevétele', type:'toggle', master:true},
+    {path:'otthon.amount', label:'Összeg', type:'money', min:0, max:50, step:0.5},
+    {path:'otthon.rate', label:'Fix kamat', type:'range', min:2, max:3, step:0.05, unit:'%'},
+    {path:'otthon.term', label:'Futamidő', type:'range', min:5, max:25, step:1, unit:'év'},
+    {path:'otthon.clawbackYears', label:'Támogatás visszafizetendő, ha eladod ennyin belül', type:'range', min:0, max:25, step:1, unit:'év'},
+    {note:'Új igénylőknek lezárult. Csak 2026. október 31-ig aláírt adásvételi szerződéssel, 2026. november 15-ig beadott igényléssel.'}
+  ]},
+  { id:'csok', title:'CSOK Plusz', color:'--c-csok', master:'csok.on', fields:[
+    {path:'csok.on', label:'CSOK Plusz igénybevétele', type:'toggle', master:true},
+    {path:'csok.amount', label:'Összeg', type:'money', min:0, max:50, step:0.5, help:'Felső határ: 15 M Ft (1 gyerek), 30 M Ft (2), 50 M Ft (3+). Legalább egy új gyermeket vállalni kell.'},
+    {path:'csok.rate', label:'Fix kamat', type:'range', min:1, max:3, step:0.05, unit:'%'},
+    {path:'csok.term', label:'Futamidő', type:'range', min:10, max:25, step:1, unit:'év'},
+    {path:'csok.suspendOnFirst', label:'12 hónap szünet az 1. új gyermek után', type:'toggle', help:'A kamat a szünet alatt is fut; a következő évben kell megfizetni.'},
+    {path:'csok.interestOnlyFirstYear', label:'Első évben csak kamatfizetés (alapból)', type:'toggle'},
+    {path:'csok.clawbackYears', label:'Támogatás visszafizetendő, ha eladod ennyin belül', type:'range', min:0, max:25, step:1, unit:'év'},
+    {note:'Csak házaspároknak. Az állami elidegenítési tilalom a teljes futamidőre szól (10 évre csökkentését tervezik). A szerződés után született 2. és minden további gyermeknél 10 M Ft-ot elengednek.'}
+  ]},
+  { id:'falusi', title:'Falusi CSOK támogatás', color:'--c-forgiven', master:'falusi.on', fields:[
+    {path:'falusi.on', label:'Falusi CSOK igénybevétele', type:'toggle', master:true},
+    {path:'falusi.purpose', label:'Cél', type:'select', options:[['new','Új lakás vásárlása vagy építése'],['used','Használt lakás vásárlása + korszerűsítés'],['modern','Meglévő lakás korszerűsítése']]},
+    {path:'falusi.clawbackYears', label:'Visszafizetendő, ha eladod ennyin belül', type:'range', min:0, max:15, step:1, unit:'év'},
+    {note:'Vissza nem térítendő. 1 / 4 / 15 M Ft 1 / 2 / 3+ gyermekre (csak korszerűsítés: 0,6 / 2 / 7,5 M Ft). Meglévő és vállalt gyermekek is számítanak; a vállaltaknak 4 / 8 / 10 éven belül kell megszületniük.', id:'falusiNote'}
+  ]},
+  { id:'babavaro', title:'Babaváró', color:'--c-babavaro', master:'babavaro.on', fields:[
+    {path:'babavaro.on', label:'Babaváró igénybevétele', type:'toggle', master:true},
+    {path:'babavaro.amount', label:'Összeg', type:'money', min:0, max:11, step:0.5},
+    {path:'babavaro.term', label:'Futamidő', type:'range', min:1, max:20, step:1, unit:'év'},
+    {path:'babavaro.toHouse', label:'A lakásvásárlásba megy', type:'toggle', help:'Kikapcsolva az összeg befektetésbe kerül.'},
+    {path:'babavaro.refRate', label:'Kamat, ha 5 éven belül nincs gyermek', help:'2026. november 1-jétől kötött szerződésnél referenciakamat + 0,5 pont.', type:'range', min:3, max:12, step:0.1, unit:'%'},
+    {note:'Házaspároknak, a feleség igényléskor 18\u201335 éves. Kamatmentes, évi 0,5% kezességi díjjal. 1. gyermek: 3 év szünet. 2.: 30% elengedés. 3.: a maradék elengedése. Ha 5 év alatt nem születik gyermek, a kamattámogatást 24 hónap alatt kamatmentesen vissza kell fizetni és a hitel kamatozik; egy későbbi gyermek visszaállítja a kamatmentességet.'}
+  ]},
+  { id:'market', title:'Piaci hitel', color:'--c-market', master:'market.on', fields:[
+    {path:'market.on', label:'Piaci hitel igénybevétele', type:'toggle', master:true},
+    {path:'market.auto', label:'Automatikusan pótolja a hiányt', type:'toggle'},
+    {path:'market.amount', label:'Összeg (ha nem automatikus)', type:'money', min:0, max:150, step:0.5},
+    {path:'market.rate', label:'Kamat', type:'range', min:2, max:14, step:0.05, unit:'%'},
+    {path:'market.term', label:'Futamidő', type:'range', min:5, max:35, step:1, unit:'év'},
+    {path:'market.fixYears', label:'Kamatperiódus', type:'range', min:0, max:35, step:1, unit:'év'},
+    {path:'market.rateAfter', label:'Kamat a kamatperiódus után', type:'range', min:2, max:14, step:0.05, unit:'%'}
+  ]},
+  { id:'kids', title:'Gyermekek', color:'--c-babavaro', open:true, fields:[
+    {path:'children.existing', label:'Már megszületett gyermekek', type:'range', min:0, max:6, step:1, unit:''},
+    {type:'births'},
+    {path:'relief.on', label:'Jelzáloghitel-elengedés', type:'toggle', help:'2. gyermeknél 1 M Ft, 3.-nál 4 M Ft, minden további után 1 M Ft, nem CSOK-os jelzáloghitelből.'}
+  ]},
+  { id:'sale', title:'Eladás', color:'--c-otthon', master:'sale.on', fields:[
+    {path:'sale.on', label:'Eladás a vizsgált időszakban', type:'toggle', master:true},
+    {path:'sale.year', label:'Eladás ennyi év után', type:'range', min:1, max:30, step:0.5, unit:'év'},
+    {path:'sale.costPct', label:'Ingatlanos és eladási költség', type:'range', min:0, max:8, step:0.1, unit:'%'},
+    {path:'prepayFeePct', label:'Előtörlesztési díj', type:'range', min:0, max:2, step:0.1, unit:'%'}
+  ]},
+  { id:'rent', title:'Bérlés helyette (összevetés)', color:'--c-rent', master:'rent.on', fields:[
+    {path:'rent.on', label:'Bérlés + befektetés vonal mutatása', type:'toggle', master:true},
+    {path:'rent.monthly', label:'Mai bérleti díj', type:'kft', min:50, max:800, step:5},
+    {path:'rent.growthPct', label:'Bérleti díj növekedése', type:'range', min:0, max:12, step:0.1, unit:'% / év'},
+    {note:'Az összes megtakarítás befektetésbe megy, a bérleti díjat ugyanabból a havi keretből fizeted, a maradékot befekteted.'}
+  ]},
+  { id:'assume', title:'Feltételezések', color:'--muted', fields:[
+    {path:'horizonYears', label:'Vizsgált időszak', type:'range', min:5, max:40, step:1, unit:'év'},
+    {path:'inflationPct', label:'Infláció (a mai forintos nézethez)', type:'range', min:0, max:15, step:0.1, unit:'%'},
+    {path:'referenceRate', label:'Állami referenciakamat', type:'range', min:3, max:10, step:0.01, unit:'%', help:'A bank teljes kamata: az általad fizetett kamat plusz az állami támogatás. 2026. novemberi igénylésekre 5,96%.'},
+    {path:'penaltyPct', label:'Büntetőkamat a visszafizetett támogatásra', type:'range', min:0, max:20, step:0.1, unit:'%', help:'MNB alapkamat (2026 októbere óta 5,5%) + 5 pont.'}
+  ]}
+];
+
+/* ---------------- build controls ---------------- */
+var controlsEl = document.getElementById('controls');
+var bindings = [];
+function fieldId(path){ return 'f-' + path.replace(/\./g,'-'); }
+
+function buildControls(){
+  controlsEl.innerHTML = '';
+  bindings = [];
+  SECTIONS.forEach(function(sec){
+    var d = el('details', {class:'sec', id:'sec-'+sec.id});
+    if (sec.open || (sec.master && get(state, sec.master))) d.open = true;
+    var sum = el('summary', null, '<span class="dot" style="background:var('+sec.color+')"></span>'+esc(sec.title)+'<span class="meta" id="meta-'+sec.id+'"></span>');
+    d.appendChild(sum);
+    var body = el('div', {class:'body'});
+    sec.fields.forEach(function(f){
+      if (f.note){ body.appendChild(el('p', {class:'note', id:f.id||''}, esc(f.note))); return; }
+      if (f.type==='births'){ var b=el('div',{id:'births',class:'field'}); body.appendChild(b); return; }
+      body.appendChild(buildField(f));
+    });
+    d.appendChild(body);
+    controlsEl.appendChild(d);
+  });
+  renderBirths();
+  syncControls();
+}
+
+function buildField(f){
+  var id = fieldId(f.path);
+  var wrap = el('div', {class:'field' + (f.master?' master':'')});
+  if (f.type==='toggle'){
+    var lab = el('label', {class:'toggle', for:id}, '<span>'+esc(f.label)+'</span>');
+    var cb = el('input', {type:'checkbox', id:id, role:'switch'});
+    lab.appendChild(cb); wrap.appendChild(lab);
+    if (f.help) wrap.appendChild(el('span',{class:'help'},esc(f.help)));
+    cb.addEventListener('change', function(){ set(state, f.path, cb.checked); onChange(f.path); });
+    bindings.push({f:f, read:function(){ cb.checked = !!get(state,f.path); }});
+    return wrap;
+  }
+  if (f.type==='select'){
+    var top = el('div',{class:'lab'}, '<label for="'+id+'">'+esc(f.label)+'</label>');
+    var s = el('select',{id:id});
+    f.options.forEach(function(o){ var op=el('option',{value:o[0]},esc(o[1])); s.appendChild(op); });
+    top.appendChild(s); wrap.appendChild(top);
+    s.addEventListener('change', function(){ set(state, f.path, s.value); onChange(f.path); });
+    bindings.push({f:f, read:function(){ s.value = get(state,f.path); }});
+    return wrap;
+  }
+  // numeric
+  var scale = f.type==='money' ? M : f.type==='kft' ? 1000 : 1;
+  var unit = f.type==='money' ? 'M Ft' : f.type==='kft' ? 'e Ft' : (f.unit||'');
+  var labRow = el('div',{class:'lab'}, '<label for="'+id+'">'+esc(f.label)+'</label>');
+  var val = el('div',{class:'val'});
+  var num = el('input',{type:'number', id:id+'-n', step:String(f.step), min:String(f.min), max:String(f.max), 'aria-label':f.label+' értéke', inputmode:'decimal'});
+  val.appendChild(num); if (unit) val.appendChild(el('span',null,esc(unit)));
+  labRow.appendChild(val); wrap.appendChild(labRow);
+  var r = el('input',{type:'range', id:id, min:String(f.min), max:String(f.max), step:String(f.step)});
+  wrap.appendChild(r);
+  if (f.help) wrap.appendChild(el('span',{class:'help'},esc(f.help)));
+  function commit(v){ v = parseFloat(v); if (isNaN(v)) return; set(state, f.path, v*scale); onChange(f.path); }
+  r.addEventListener('input', function(){ num.value = r.value; commit(r.value); });
+  num.addEventListener('change', function(){ commit(num.value); r.value = num.value; });
+  bindings.push({f:f, read:function(){ var v=get(state,f.path)/scale; v=Math.round(v*1000)/1000; num.value=v; r.value=v; }});
+  return wrap;
+}
+
+function renderBirths(){
+  var box = document.getElementById('births'); if(!box) return;
+  box.innerHTML = '<div class="lab"><label>Tervezett születések (évek a vásárlás után)</label><button class="btn small" id="addBirth" type="button">Gyermek hozzáadása</button></div>';
+  var births = state.children.births;
+  births.forEach(function(y, i){
+    var row = el('div',{class:'birth'});
+    row.appendChild(el('span',{class:'tag'},'#'+(i+1)));
+    var r = el('input',{type:'range', min:'0', max:'15', step:'0.25', value:String(y), id:'birth-'+i, 'aria-label':(i+1)+'. gyermek születési éve'});
+    var v = el('span',{class:'num',style:'min-width:52px;text-align:right'}, y.toLocaleString('hu-HU',{minimumFractionDigits:2})+' év');
+    var x = el('button',{class:'btn small', type:'button', 'aria-label':(i+1)+'. gyermek törlése'}, 'Törlés');
+    r.addEventListener('input', function(){ births[i]=parseFloat(r.value); v.textContent=births[i].toLocaleString('hu-HU',{minimumFractionDigits:2})+' év'; schedule(); });
+    x.addEventListener('click', function(){ births.splice(i,1); renderBirths(); markCustom(); schedule(); });
+    row.appendChild(r); row.appendChild(v); row.appendChild(x);
+    box.appendChild(row);
+  });
+  if (!births.length) box.appendChild(el('span',{class:'help'},'Nincs tervezett születés. A CSOK Plusz legalább egyet kér, a Babaváró 5 éven belül egyet.'));
+  document.getElementById('addBirth').addEventListener('click', function(){
+    var last = births.length ? births[births.length-1] : 0;
+    births.push(Math.min(15, last + 2)); renderBirths(); markCustom(); schedule();
+  });
+}
+
+function syncControls(){
+  bindings.forEach(function(b){ b.read(); });
+  SECTIONS.forEach(function(sec){
+    if (sec.master){ var d=document.getElementById('sec-'+sec.id); d.classList.toggle('off', !get(state, sec.master)); }
+  });
+  var wr = document.getElementById(fieldId('wekerle.rate'));
+  if (wr){ var dis = !!state.wekerle.autoRate; wr.disabled = dis; document.getElementById(fieldId('wekerle.rate')+'-n').disabled = dis; }
+  var ma = document.getElementById(fieldId('market.amount'));
+  if (ma){ var d2 = !!state.market.auto; ma.disabled=d2; document.getElementById(fieldId('market.amount')+'-n').disabled=d2; }
+}
+
+function markCustom(){ activePreset = null; renderPresets(); }
+function onChange(path){
+  if (path==='isNew' || path==='wekerle.autoRate') applyAutoRate();
+  if (path==='investPile' && state.investPile > state.cash) state.investPile = state.cash;
+  if (path==='cash' && state.investPile > state.cash) state.investPile = state.cash;
+  markCustom(); syncControls(); schedule();
+}
+function applyAutoRate(){ if (state.wekerle.autoRate) state.wekerle.rate = state.isNew ? 3 : 5; }
+
+/* ---------------- presets UI ---------------- */
+function renderPresets(){
+  var nav = document.getElementById('presets'); nav.innerHTML='';
+  PRESETS.forEach(function(pr){
+    var b = el('button',{class:'preset'+(activePreset===pr.id?' active':''), type:'button'}, '<b>'+esc(pr.name)+'</b><small>'+esc(pr.sub)+'</small>');
+    b.addEventListener('click', function(){ loadParams(freshParams(pr.p), pr.id); toast('Betöltve: '+pr.name); });
+    nav.appendChild(b);
+  });
+}
+function loadParams(p, presetId){
+  state = E.merge(freshParams(), p);
+  if (!Array.isArray(state.children.births)) state.children.births = [];
+  applyAutoRate();
+  activePreset = presetId || null;
+  renderPresets(); buildControls(); schedule();
+}
+
+/* ---------------- results ---------------- */
+var result = null, baseline = null, chart = null, tab = 'debt';
+var cmp = { key:'', label:'', params:null }, pinned = null;
+var TABS = [['debt','Fennálló tartozás'],['payment','Havi törlesztő'],['interest','Kamat és elengedés'],['worth','Nettó vagyon']];
+var realView = false;
+var raf = 0;
+function schedule(){ if (raf) return; raf = requestAnimationFrame(function(){ raf=0; run(); }); }
+
+function deflator(month){ return realView ? Math.pow(1 + state.inflationPct/100, month/12) : 1; }
+
+function run(){
+  applyAutoRate();
+  result = E.simulate(state);
+  baseline = cmp.params ? E.simulate(cmp.params) : null;
+  renderKpis(); renderAlerts(); renderFunding(); renderChart(); renderTable(); renderTimeline(); renderSale(); renderMeta(); renderCompare();
+}
+
+function renderKpis(){
+  var r = result, f = r.funding;
+  var borrowed = f.loans.reduce(function(s,l){ return s+l.amount; },0);
+  var free = r.totals.forgiven + f.grant;
+  var endIdx = r.series.length-1;
+  var nw = r.end.netWorth / deflator(r.end.month);
+  var rnw = r.end.rentNetWorth / deflator(r.end.month);
+  var jtmCls = r.jtm > r.jtmLimit ? 'neg' : '';
+  var items = [
+    {k:'Szükséges hitel', v:mft(borrowed), s:f.loans.length ? f.loans.map(function(l){return l.label;}).join(' + ') : 'Nincs hitel', hero:true},
+    {k:'Induló havi törlesztő', v:huf(r.initialPayment), s:'<span class="'+jtmCls+'">a jövedelem '+r.jtm.toFixed(0)+'%-a</span> · korlát '+r.jtmLimit+'%'},
+    {k:'Kamat és díjak', v:mft(r.totals.interest + r.totals.fees), s:(r.end.month/12).toLocaleString('hu-HU',{maximumFractionDigits:1})+' év alatt'},
+    {k:'Ingyen pénz', v:mft(free), s:'támogatás '+mft(f.grant)+' · elengedés '+mft(r.totals.forgiven)},
+    {k:'Nettó vagyon a végén', v:mft(nw), s: state.rent.on ? 'bérléssel: '+mft(rnw) : (realView?'mai forintban':'névértéken')}
+  ];
+  document.getElementById('kpis').innerHTML = items.map(function(i){
+    return '<div class="kpi'+(i.hero?' hero':'')+'"><div class="k">'+esc(i.k)+'</div><div class="v">'+i.v+'</div><div class="s">'+i.s+'</div></div>';
+  }).join('');
+  document.getElementById('stickyRow').innerHTML = [
+    ['Hitel', mft(borrowed)], ['Törlesztő', kft(r.initialPayment)], ['Kamat', mft(r.totals.interest+r.totals.fees)], ['Ingyen', mft(free)], ['Vagyon', mft(nw)]
+  ].map(function(x){ return '<div>'+x[0]+'<b>'+x[1]+'</b></div>'; }).join('');
+}
+
+function renderAlerts(){
+  var box = document.getElementById('alerts');
+  var w = result.warnings.slice().sort(function(a,b){ var o={error:0,warn:1,info:2}; return o[a.level]-o[b.level]; });
+  box.innerHTML = w.map(function(x){ return '<div class="alert '+x.level+'">'+esc(x.text)+'</div>'; }).join('');
+}
+
+function renderFunding(){
+  var f = result.funding;
+  var parts = [];
+  if (f.cashToHouse>0) parts.push({label:'Önerő', amount:f.cashToHouse, color:css('--muted')});
+  if (f.grant>0) parts.push({label:'Falusi CSOK támogatás', amount:f.grant, color:css('--c-forgiven')});
+  f.loans.forEach(function(l){ if (l.key==='babavaro' && !f.babavaroToHouse) return; parts.push({label:l.label, amount:l.amount, color:css(LOAN_COLORS[l.key])}); });
+  if (f.shortfall>1) parts.push({label:'Hiány', amount:f.shortfall, color:css('--err'), gap:true});
+  var total = parts.reduce(function(s,p){return s+p.amount;},0) || 1;
+  document.getElementById('needLine').textContent = 'szükséges '+mft(f.need)+' (vételár '+mft(f.price)+' + illeték '+mft(f.duty,2)+' + díjak '+mft(f.closing,2)+')' + (f.surplus>1 ? ' · a fennmaradó '+mft(f.surplus)+' befektetésbe megy' : '') + ' · hitelfedezeti arány '+f.ltv.toFixed(0)+'%';
+  document.getElementById('fundStack').innerHTML = parts.map(function(p){
+    var bg = p.gap ? 'repeating-linear-gradient(45deg,'+p.color+' 0 6px,transparent 6px 12px)' : p.color;
+    return '<div title="'+esc(p.label)+': '+mft(p.amount)+'" style="flex:'+(p.amount/total)+' 0 0;background:'+bg+'"></div>';
+  }).join('');
+  document.getElementById('fundLegend').innerHTML = parts.map(function(p){
+    return '<span><i style="background:'+p.color+'"></i>'+esc(p.label)+' <b>'+mft(p.amount)+'</b></span>';
+  }).join('') + (f.investPile>0 ? '<span><i style="background:'+css('--c-port')+'"></i>Befektetve marad <b>'+mft(f.investPile)+'</b></span>' : '');
+}
+
+function renderTabs(){
+  var t = document.getElementById('tabs'); t.innerHTML='';
+  TABS.forEach(function(x){
+    var b = el('button',{class:'btn small', role:'tab', 'aria-selected':String(tab===x[0]), 'aria-pressed':String(tab===x[0]), type:'button'}, esc(x[1]));
+    b.addEventListener('click', function(){ tab=x[0]; renderTabs(); renderChart(); });
+    t.appendChild(b);
+  });
+}
+
+/* vertical event markers */
+var markerPlugin = {
+  id:'markers',
+  afterDatasetsDraw: function(c){
+    var ev = c.options.plugins.markers && c.options.plugins.markers.events; if (!ev || !ev.length) return;
+    var x = c.scales.x, y = c.scales.y, ctx = c.ctx;
+    ctx.save();
+    var seen = {};
+    ev.forEach(function(e){
+      var px = x.getPixelForValue(e.month/12);
+      if (px < x.left || px > x.right) return;
+      var col = e.type==='birth' ? css('--accent') : e.type==='sale' ? css('--c-otthon') : e.type==='forgive' ? css('--c-forgiven') : css('--warn');
+      ctx.strokeStyle = col; ctx.globalAlpha = .7; ctx.setLineDash([4,4]); ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(px, y.top); ctx.lineTo(px, y.bottom); ctx.stroke();
+      ctx.setLineDash([]); ctx.globalAlpha = 1;
+      var key = Math.round(px);
+      var lab = e.type==='birth' ? 'gyermek' : e.type==='sale' ? 'eladás' : e.type==='rate' ? 'kamatforduló' : e.type==='forgive' ? 'elengedés' : e.type==='penalty' ? 'visszafizetés' : '';
+      if (!lab || seen[key+lab]) return; seen[key+lab]=1;
+      var off = Object.keys(seen).filter(function(k){ return k.indexOf(key)===0; }).length - 1;
+      ctx.fillStyle = col; ctx.font = '11px '+css('--f-mono');
+      ctx.fillText(lab, Math.min(px+4, x.right-90), y.top + 12 + off*13);
+    });
+    ctx.restore();
+  }
+};
+
+function series(fn, src){ src = src || result.series; return src.map(function(r){ return {x:r.month/12, y:fn(r)/deflator(r.month)}; }); }
+function alpha(c, a){
+  var h = c.replace('#',''); if (h.length===3) h = h.split('').map(function(x){return x+x;}).join('');
+  if (h.length!==6) return c;
+  return 'rgba('+parseInt(h.slice(0,2),16)+','+parseInt(h.slice(2,4),16)+','+parseInt(h.slice(4,6),16)+','+a+')';
+}
+
+function renderChart(){
+  if (!window.Chart){ document.getElementById('chartNote').textContent='A diagramkönyvtár nem töltődött be.'; return; }
+  var ink = css('--ink'), muted = css('--muted'), line = css('--line');
+  var ds = [], note = '', stacked = false;
+  var keys = result.perLoan.map(function(l){ return l.key; });
+  var labelOf = {}; result.perLoan.forEach(function(l){ labelOf[l.key]=l.label; });
+  var steps = false;
+  if (tab==='debt'){
+    stacked = true;
+    keys.forEach(function(k){ var c=css(LOAN_COLORS[k]); ds.push({label:labelOf[k], data:series(function(r){return r.balances[k]||0;}), borderColor:c, backgroundColor:alpha(c,.35), fill:true, borderWidth:1.5}); });
+    if (baseline) ds.push({label:'B: összes tartozás', data:series(function(r){return r.debt;}, baseline.series), borderColor:muted, borderDash:[6,4], fill:false, borderWidth:1.5, stack:'b'});
+    note = 'Fennálló tartozás hitelenként. A szaggatott függőleges vonalak a születéseket, elengedéseket és kamatfordulókat jelölik.';
+  } else if (tab==='payment'){
+    stacked = true; steps = true;
+    keys.forEach(function(k){ var c=css(LOAN_COLORS[k]); ds.push({label:labelOf[k], data:series(function(r){return r.payments[k]||0;}), borderColor:c, backgroundColor:alpha(c,.45), fill:true, borderWidth:1, stepped:true}); });
+    ds.push({label:'Havi keret', data:series(function(r){return r.budget;}), borderColor:ink, borderDash:[3,3], fill:false, borderWidth:1.5, stack:'budget', stepped:true});
+    if (baseline) ds.push({label:'B: havi törlesztő', data:series(function(r){return r.payment;}, baseline.series), borderColor:muted, borderDash:[6,4], fill:false, borderWidth:1.5, stack:'b', stepped:true});
+    note = 'Havi törlesztő hitelenként a havi kerethez képest. A kiesések törlesztési szünetek.';
+  } else if (tab==='interest'){
+    var ci = css('--c-interest'), cf = css('--c-forgiven'), cp = css('--c-port');
+    ds.push({label:'Kifizetett kamat és díj', data:series(function(r){ return keys.reduce(function(s,k){return s+(r.interestCum[k]||0);},0); }), borderColor:ci, backgroundColor:alpha(ci,.2), fill:true, borderWidth:2});
+    ds.push({label:'Elengedett tartozás', data:series(function(r){ return keys.reduce(function(s,k){return s+(r.forgivenCum[k]||0);},0); }), borderColor:cf, backgroundColor:alpha(cf,.2), fill:true, borderWidth:2});
+    ds.push({label:'Teljes fennálló tartozás', data:series(function(r){return r.debt;}), borderColor:ink, fill:false, borderWidth:1.5});
+    if (baseline) ds.push({label:'B: kifizetett kamat', data:series(function(r){ return Object.keys(r.interestCum).reduce(function(s,k){return s+r.interestCum[k];},0); }, baseline.series), borderColor:muted, borderDash:[6,4], fill:false, borderWidth:1.5});
+    note = 'A hitelek halmozott költsége és az állam által elengedett összeg.';
+  } else {
+    ds.push({label:'Nettó vagyon (vásárlás)', data:series(function(r){return r.netWorth;}), borderColor:css('--accent'), backgroundColor:alpha(css('--accent'),.15), fill:true, borderWidth:2.5});
+    ds.push({label:'Ingatlan értéke', data:series(function(r){return r.houseValue;}), borderColor:css('--c-house'), fill:false, borderWidth:1.5});
+    ds.push({label:'Befektetések', data:series(function(r){return r.portfolio;}), borderColor:css('--c-port'), borderDash:[2,3], fill:false, borderWidth:1.5});
+    ds.push({label:'Tartozás', data:series(function(r){return -r.debt;}), borderColor:css('--err'), fill:false, borderWidth:1.2});
+    if (state.rent.on) ds.push({label:'Bérlés + befektetés', data:series(function(r){return r.rentNetWorth;}), borderColor:css('--c-rent'), borderDash:[8,4], fill:false, borderWidth:2});
+    if (baseline) ds.push({label:'B: nettó vagyon', data:series(function(r){return r.netWorth;}, baseline.series), borderColor:muted, borderDash:[6,4], fill:false, borderWidth:1.5});
+    note = 'Ingatlan értéke + befektetések − tartozás. A fenntartás és a bérleti díj ugyanabból a havi keretből megy.';
+  }
+  ds.forEach(function(d){ d.pointRadius=0; d.pointHoverRadius=3; d.tension=0; if(!d.stack) d.stack = stacked ? 's' : undefined; });
+  document.getElementById('chartNote').textContent = note + (realView ? ' Az értékek mai forintban.' : '');
+  var cfg = {
+    type:'line',
+    data:{datasets:ds},
+    options:{
+      animation:false, responsive:true, maintainAspectRatio:false, parsing:false, normalized:true,
+      interaction:{mode:'index', intersect:false},
+      scales:{
+        x:{type:'linear', min:0, max:Math.max(1,result.end.month/12), ticks:{color:muted, stepSize: result.end.month>240?5:(result.end.month>96?2:1), callback:function(v){return v+'. év';}}, grid:{color:line}},
+        y:{stacked:stacked, ticks:{color:muted, callback:function(v){ return Math.abs(v)>=M ? (v/M).toLocaleString('hu-HU')+' M' : (v/1000).toLocaleString('hu-HU')+'k'; }}, grid:{color:line}}
+      },
+      plugins:{
+        legend:{labels:{color:ink, boxWidth:10, boxHeight:10, font:{family:css('--f-body')}}},
+        tooltip:{callbacks:{
+          title:function(it){ var x=it[0].parsed.x; var y=Math.floor(x+1e-9), mo=Math.round((x-y)*12); return y+'. év'+(mo?' + '+mo+' hó':''); },
+          label:function(it){ return it.dataset.label+': '+(Math.abs(it.parsed.y)>=M? mft(it.parsed.y,2) : huf(it.parsed.y)); }
+        }},
+        markers:{events: result.events}
+      }
+    },
+    plugins:[markerPlugin]
+  };
+  if (chart) chart.destroy();
+  chart = new Chart(document.getElementById('chart'), cfg);
+}
+
+function renderTable(){
+  var r = result;
+  var rows = r.perLoan.map(function(l){
+    return '<tr><td><span class="legend"><span><i style="background:var('+LOAN_COLORS[l.key]+')"></i>'+esc(l.label)+'</span></span></td><td>'+mft(l.principal)+'</td><td>'+l.rate.toLocaleString('hu-HU',{minimumFractionDigits:2})+'%</td><td>'+mft(l.interest+l.fees)+'</td><td>'+mft(l.forgiven)+'</td><td>'+mft(l.remaining)+'</td></tr>';
+  }).join('');
+  var t = r.totals;
+  var rem = r.perLoan.reduce(function(s,l){return s+l.remaining;},0);
+  document.getElementById('loanTable').innerHTML = '<thead><tr><th>Hitel</th><th>Felvett</th><th>Kamat</th><th>Kamatköltség</th><th>Elengedve</th><th>Hátralék</th></tr></thead><tbody>'+
+    (rows || '<tr><td colspan="6">Ebben a változatban nincs hitel.</td></tr>') + '</tbody>' +
+    (rows ? '<tfoot><tr><td><b>Összesen</b></td><td>'+mft(t.principal)+'</td><td></td><td>'+mft(t.interest+t.fees)+'</td><td>'+mft(t.forgiven)+'</td><td>'+mft(rem)+'</td></tr></tfoot>' : '');
+}
+
+function renderTimeline(){
+  var ev = result.events;
+  var names = {birth:'születés', forgive:'elengedés', suspend:'szünet', rate:'kamat', penalty:'visszafizetés', sale:'eladás'};
+  document.getElementById('timeline').innerHTML = ev.length ? ev.map(function(e){
+    var y = Math.floor((e.month-1)/12), mo = (e.month-1)%12;
+    return '<li><span class="when">'+(y+1)+'. év '+(mo+1)+'. hó</span><span><span class="chip '+e.type+'">'+names[e.type]+'</span>'+esc(e.text)+'</span></li>';
+  }).join('') : '<li><span class="when">—</span><span>Nincs esemény. Adj hozzá tervezett gyermeket vagy eladást, hogy lásd az elengedéseket, szüneteket és visszafizetéseket.</span></li>';
+}
+
+function renderSale(){
+  var card = document.getElementById('saleCard'); var s = result.sale;
+  if (!s){ card.hidden = true; return; }
+  card.hidden = false;
+  var y = (s.month/12);
+  document.getElementById('saleWhen').textContent = (y%1?y.toLocaleString('hu-HU',{maximumFractionDigits:1}):y)+' év után';
+  var cls = s.propertyGain>=0?'pos':'neg', cls2 = s.cashResult>=0?'pos':'neg';
+  var claw = s.clawbacks.length ? s.clawbacks.map(function(c){ return '<tr><td>'+esc(c.label)+'</td><td>−'+mft(c.amount,2)+'</td></tr>'; }).join('') : '<tr><td>Állami visszafizetés</td><td>nincs</td></tr>';
+  document.getElementById('saleBody').innerHTML =
+    '<div><div class="kpi" style="padding:0"><div class="k">Árnyereség vagy -veszteség</div><div class="big '+cls+'">'+(s.propertyGain>=0?'+':'')+mft(s.propertyGain)+'</div><div class="s">eladási ár mínusz vételár, illeték, díjak és eladási költség</div></div>'+
+    '<div class="kpi" style="padding:12px 0 0"><div class="k">Pénzügyi eredmény</div><div class="big '+cls2+'">'+(s.cashResult>=0?'+':'')+mft(s.cashResult)+'</div><div class="s">az eladás után kézben maradó pénz mínusz minden, amit a lakásba és a hitelekbe befizettél</div></div></div>'+
+    '<div class="tablewrap"><table><tbody>'+
+      '<tr><td>Eladási ár</td><td>'+mft(s.salePrice,2)+'</td></tr>'+
+      '<tr><td>Eladási költség</td><td>−'+mft(s.saleCost,2)+'</td></tr>'+
+      '<tr><td>Jelzáloghitelek végtörlesztése</td><td>−'+mft(s.mortgageBalance,2)+'</td></tr>'+
+      '<tr><td>Előtörlesztési díj</td><td>−'+mft(s.prepayFees,2)+'</td></tr>'+ claw +
+      '<tr><td><b>Nettó bevétel</b></td><td><b>'+mft(s.proceeds,2)+'</b></td></tr>'+
+      '<tr><td>Befizetve (önerő + törlesztések)</td><td>'+mft(s.cashIn,2)+'</td></tr>'+
+    '</tbody></table></div>';
+}
+
+function renderMeta(){
+  var lm = {}; result.perLoan.forEach(function(l){ lm[l.key]=l; });
+  function m(id, txt){ var e=document.getElementById('meta-'+id); if(e) e.textContent = txt; }
+  m('property', mft(state.price,1));
+  m('money', mft(state.cash,1));
+  ['wekerle','otthon','csok','babavaro','market'].forEach(function(k){ m(k, lm[k] ? mft(lm[k].principal)+' · '+lm[k].rate+'%' : (get(state,k+'.on')?'0':'ki')); });
+  m('falusi', state.falusi.on ? mft(result.funding.grant) : 'ki');
+  m('kids', state.children.existing + ' + ' + state.children.births.length + ' tervezett');
+  m('sale', state.sale.on ? state.sale.year+'. év' : 'ki');
+  m('rent', state.rent.on ? kft(state.rent.monthly) : 'ki');
+  m('assume', state.horizonYears+' év');
+}
+
+/* ---------------- saving ---------------- */
+var LS_KEY = 'lakashitel-lab-sets';
+var store = { kind:'local' };
+var savedCache = [];
+
+function localRead(){ try { return JSON.parse(localStorage.getItem(LS_KEY) || '[]'); } catch(e){ return []; } }
+function localWrite(list){ try { localStorage.setItem(LS_KEY, JSON.stringify(list)); return true; } catch(e){ return false; } }
+
+async function listSaved(){
+  if (store.kind==='db'){
+    try {
+      var snap = await store.db.collection(store.col).get();
+      savedCache = snap.docs.map(function(d){ var x=d.data()||{}; return {id:d.id, name:x.name, savedAt:x.savedAt, params:x.params}; });
+    } catch(e){ savedCache = localRead(); }
+  } else savedCache = localRead();
+  savedCache.sort(function(a,b){ return (b.savedAt||'').localeCompare(a.savedAt||''); });
+  renderCmpOptions();
+  return savedCache;
+}
+async function saveSet(name){
+  var rec = { name:name, savedAt:new Date().toISOString(), params: JSON.parse(JSON.stringify(state)) };
+  if (store.kind==='db'){
+    try { await store.db.collection(store.col).add(rec); return true; } catch(e){ /* fall through */ }
+  }
+  var list = localRead(); rec.id = 'l'+Date.now(); list.push(rec); return localWrite(list);
+}
+async function deleteSet(id){
+  if (store.kind==='db' && id.charAt(0)!=='l'){ try { await store.db.collection(store.col).doc(id).delete(); return; } catch(e){} }
+  localWrite(localRead().filter(function(x){ return x.id!==id; }));
+}
+
+function renderSaved(){
+  var box = document.getElementById('savedList');
+  box.innerHTML = savedCache.length ? '' : '<p class="note" style="color:var(--muted)">Még nincs mentett változat. Adj nevet a fenti mezőben, majd nyomd meg a Mentés gombot.</p>';
+  savedCache.forEach(function(s){
+    var it = el('div',{class:'item'});
+    it.appendChild(el('b',null,esc(s.name||'Névtelen')));
+    it.appendChild(el('small',null, s.savedAt ? new Date(s.savedAt).toLocaleDateString('hu-HU') : ''));
+    var load = el('button',{class:'btn small',type:'button'},'Betöltés');
+    var del = el('button',{class:'btn small',type:'button','aria-label':(s.name||'Változat')+' törlése'},'Törlés');
+    load.addEventListener('click', function(){ loadParams(s.params, null); closePanel(); toast('Betöltve: '+(s.name||'változat')); });
+    del.addEventListener('click', async function(){
+      if (del.dataset.armed){ await deleteSet(s.id); await listSaved(); renderSaved(); toast('Törölve'); }
+      else { del.dataset.armed='1'; del.textContent='Biztosan törlöd?'; setTimeout(function(){ if(del.isConnected){ delete del.dataset.armed; del.textContent='Törlés'; } }, 3000); }
+    });
+    it.appendChild(load); it.appendChild(del); box.appendChild(it);
+  });
+}
+var panel = document.getElementById('savePanel');
+async function openPanel(focusName){
+  panel.hidden = false;
+  document.getElementById('storeNote').textContent = store.kind==='db' ? 'A fiókodba mentve' : 'Ebben a böngészőben mentve';
+  await listSaved(); renderSaved();
+  if (focusName) document.getElementById('saveName').focus();
+}
+function closePanel(){ panel.hidden = true; }
+panel.querySelector('[data-close]').addEventListener('click', closePanel);
+document.getElementById('btnSaved').addEventListener('click', function(){ openPanel(false); });
+document.getElementById('btnSave').addEventListener('click', function(){ openPanel(true); });
+document.getElementById('saveConfirm').addEventListener('click', async function(){
+  var inp = document.getElementById('saveName');
+  var name = inp.value.trim() || ('Változat ' + new Date().toLocaleString('hu-HU'));
+  var ok = await saveSet(name);
+  if (ok){ inp.value=''; await listSaved(); renderSaved(); toast('Mentve: '+name); } else toast('Ebben a nézetben nem sikerült menteni. Használd az exportálást.');
+});
+document.getElementById('exportBtn').addEventListener('click', function(){
+  var ta = document.getElementById('ioText'); ta.value = JSON.stringify(state);
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(ta.value).then(function(){ toast('Vágólapra másolva'); }, function(){ ta.select(); toast('Kijelölve, másold ki kézzel'); });
+  } else { ta.select(); toast('Kijelölve, másold ki kézzel'); }
+});
+document.getElementById('importBtn').addEventListener('click', function(){
+  try { var p = JSON.parse(document.getElementById('ioText').value); loadParams(p, null); toast('Betöltve a szövegből'); closePanel(); }
+  catch(e){ toast('Ez nem érvényes változat. Illeszd be a teljes kimásolt szöveget.'); }
+});
+
+/* ---------------- comparison ---------------- */
+var cmpSel = document.getElementById('cmpSelect');
+function renderCmpOptions(){
+  var cur = cmpSel.value || cmp.key;
+  var html = '<option value="">— nincs —</option>';
+  if (pinned) html += '<option value="pin">Rögzített állapot</option>';
+  html += '<optgroup label="Sablonok">' + PRESETS.map(function(p){ return '<option value="p:'+p.id+'">'+esc(p.name)+'</option>'; }).join('') + '</optgroup>';
+  if (savedCache.length) html += '<optgroup label="Mentett változatok">' + savedCache.map(function(s){ return '<option value="s:'+esc(s.id)+'">'+esc(s.name||'Névtelen')+'</option>'; }).join('') + '</optgroup>';
+  cmpSel.innerHTML = html;
+  cmpSel.value = cur;
+  if (cmpSel.value !== cur){ cmpSel.value = ''; }
+}
+function paramsFor(key){
+  if (!key) return null;
+  if (key==='pin') return pinned ? { label:'Rögzített állapot', params:pinned } : null;
+  if (key.indexOf('p:')===0){ var pr = PRESETS.filter(function(p){ return 'p:'+p.id===key; })[0]; return pr ? { label:pr.name, params:freshParams(pr.p) } : null; }
+  if (key.indexOf('s:')===0){ var sv = savedCache.filter(function(x){ return 's:'+x.id===key; })[0]; return sv ? { label:sv.name||'Névtelen', params:E.merge(freshParams(), sv.params) } : null; }
+  return null;
+}
+function setCompare(key){
+  var f = paramsFor(key);
+  cmp = f ? { key:key, label:f.label, params:f.params } : { key:'', label:'', params:null };
+  if (f && !f.params.wekerle.autoRate){} 
+  cmpSel.value = cmp.key;
+  run();
+}
+cmpSel.addEventListener('change', function(){ setCompare(cmpSel.value); });
+document.getElementById('cmpSwap').addEventListener('click', function(){
+  if (!cmp.params){ toast('Előbb válassz B változatot.'); return; }
+  var a = JSON.parse(JSON.stringify(state)), bLabel = cmp.label, bParams = cmp.params;
+  pinned = a; renderCmpOptions();
+  loadParams(bParams, null);
+  cmp = { key:'pin', label:'Rögzített állapot', params:a };
+  renderCmpOptions(); cmpSel.value = 'pin'; run();
+  toast('Felcserélve: A most „'+bLabel+'”, B az előző A.');
+});
+document.getElementById('btnBaseline').addEventListener('click', function(){
+  pinned = JSON.parse(JSON.stringify(state));
+  renderCmpOptions();
+  setCompare('pin');
+  toast('Rögzítve B-nek. Módosíts a bal oldalon az összevetéshez.');
+});
+
+function metricsOf(r){
+  var f = r.funding;
+  var free = f.grant + r.totals.forgiven;
+  var y = r.end.month/12;
+  return [
+    {k:'Szükséges hitel', v:f.loans.reduce(function(s,l){return s+l.amount;},0), fmt:'m', dir:-1},
+    {k:'Induló havi törlesztő', v:r.initialPayment, fmt:'f', dir:-1},
+    {k:'Törlesztő / jövedelem', v:r.jtm, fmt:'p', dir:-1},
+    {k:'Kamat és díjak', v:r.totals.interest + r.totals.fees, fmt:'m', dir:-1},
+    {k:'Ingyen pénz (támogatás + elengedés)', v:free, fmt:'m', dir:1},
+    {k:'Hitelekre befizetve', v:r.totals.paid, fmt:'m', dir:-1},
+    {k:'Hátralék a végén', v:r.end.debt, fmt:'m', dir:-1},
+    {k:'Nettó vagyon a végén', v:r.end.netWorth / deflator(r.end.month), fmt:'m', dir:1},
+    {k:'Eladás nettó bevétele', v:r.sale ? r.sale.proceeds : null, fmt:'m', dir:1},
+    {k:'Vizsgált időszak', v:y, fmt:'y', dir:0},
+    {k:'Hitelek', v:f.loans.map(function(l){return l.label;}).join(', ') || '—', fmt:'t', dir:0}
+  ];
+}
+function fmtM(v, t){
+  if (v==null) return '—';
+  if (t==='m') return mft(v);
+  if (t==='f') return huf(v);
+  if (t==='p') return v.toLocaleString('hu-HU',{maximumFractionDigits:0})+'%';
+  if (t==='y') return v.toLocaleString('hu-HU',{maximumFractionDigits:1})+' év';
+  return esc(v);
+}
+function renderCompare(){
+  var tbl = document.getElementById('cmpTable'), empty = document.getElementById('cmpEmpty');
+  if (!baseline){ tbl.innerHTML=''; empty.hidden=false; document.getElementById('cmpWrap').hidden=true; return; }
+  empty.hidden=true; document.getElementById('cmpWrap').hidden=false;
+  var a = metricsOf(result), b = metricsOf(baseline);
+  var rows = a.map(function(x,i){
+    var y = b[i], diff = '', cls = '';
+    if (x.fmt!=='t' && x.v!=null && y.v!=null){
+      var d = x.v - y.v;
+      if (Math.abs(d) > (x.fmt==='p'||x.fmt==='y' ? 0.05 : 500)){
+        diff = (d>0?'+':'−') + fmtM(Math.abs(d), x.fmt);
+        if (x.dir) cls = (d*x.dir>0) ? 'better' : 'worse';
+      } else diff = '=';
+    }
+    return '<tr><td>'+x.k+'</td><td class="a">'+fmtM(x.v,x.fmt)+'</td><td>'+fmtM(y.v,y.fmt)+'</td><td class="d '+cls+'">'+diff+'</td></tr>';
+  }).join('');
+  tbl.innerHTML = '<thead><tr><th></th><th class="a">A: jelenlegi</th><th>B: '+esc(cmp.label)+'</th><th>A − B</th></tr></thead><tbody>'+rows+'</tbody>';
+}
+
+/* ---------------- Excel export (Hungarian Excel, tab-separated) ---------------- */
+function colL(n){ var s=''; while(n>0){ var m=(n-1)%26; s=String.fromCharCode(65+m)+s; n=Math.floor((n-1)/26); } return s; }
+function xn(x){ if (x==null || isNaN(x)) return ''; var v = Math.round(x*1e6)/1e6; return String(v).replace('.', ','); }
+function buildExcel(){
+  var p = state, r = result;
+  var rows = [];
+  function add(arr){ rows.push(arr); return rows.length; } // returns Excel row number
+  var today = new Date().toLocaleDateString('hu-HU');
+  add(['Lakáshitel Lab – export', today]);
+  add(['Összegek forintban, kamatok tizedes törtként (0,05 = 5%). A havi táblázat képletsorait húzd lefelé a futamidő végéig.']);
+  add([]);
+  add(['BEMENETEK']);
+  var dutyPct = (p.dutyExempt || p.csok.on || (p.falusi.on && p.falusiEligible)) ? 0 : p.dutyPct/100;
+  var rPrice = add(['Vételár', xn(p.price)]);
+  var rDuty = add(['Illeték aránya', xn(dutyPct)]);
+  var rFees = add(['Egyéb díjak aránya', xn(p.closingPct/100)]);
+  var rNeed = add(['Szükséges összeg', '=B'+rPrice+'*(1+B'+rDuty+'+B'+rFees+')']);
+  var rCash = add(['Önerő a lakásba', xn(r.funding.cashToHouse)]);
+  add(['Befektetve marad', xn(r.funding.investPile)]);
+  var rGrant = add(['Falusi CSOK támogatás', xn(r.funding.grant)]);
+  var rLoansIn = add(['Hitelek a lakásba', '']); // filled later
+  var rGap = add(['Hiány (–) / többlet (+)', '=B'+rCash+'+B'+rGrant+'+B'+rLoansIn+'-B'+rNeed]);
+  var rInc = add(['Háztartás nettó jövedelme', xn(p.income.net)]);
+  var rJtm = add(['JTM korlát', '=HA(B'+rInc+'>=800000;0,6;0,5)']);
+  var rPay1 = add(['Induló havi törlesztő', '']); // filled later
+  add(['Törlesztő / jövedelem', '=HA(B'+rInc+'>0;B'+rPay1+'/B'+rInc+';0)']);
+  add(['Megfelel a JTM-nek?', '=HA(B'+rPay1+'<=B'+rInc+'*B'+rJtm+';"igen";"nem")']);
+  add([]);
+
+  /* loans block */
+  add(['HITELEK']);
+  add(['Hitel','Összeg','Kamat','Kamat a periódus után','Kamatperiódus (hó, 0 = végig fix)','Futamidő (hó)','Csak kamat (hó)','Díj (évi)','Lakásba (1/0)','Induló törlesztő','Kamat és díj összesen','Elengedés összesen','Hátralék']);
+  var loans = r.perLoan;
+  var loanRow = {};
+  loans.forEach(function(l){
+    var lp = p[l.key==='market'?'market':l.key] || {};
+    var rate1 = l.key==='babavaro' ? 0 : (l.key==='market' ? p.market.rate : lp.rate);
+    var rate2 = l.key==='market' ? p.market.rateAfter : rate1;
+    var fix = l.key==='market' ? Math.round(p.market.fixYears*12) : 0;
+    var term = Math.round((l.key==='wekerle'||l.key==='otthon' ? Math.min(lp.term,25) : l.key==='csok' ? Math.min(lp.term,25) : l.key==='babavaro' ? Math.min(lp.term,20) : lp.term)*12);
+    var io = (l.key==='csok' && p.csok.interestOnlyFirstYear) ? 12 : 0;
+    var fee = l.key==='babavaro' ? p.babavaro.feePct/100 : 0;
+    var inHouse = (l.key==='babavaro' && !p.babavaro.toHouse) ? 0 : 1;
+    loanRow[l.key] = add([l.label, xn(l.principal), xn(rate1/100), xn(rate2/100), String(fix), String(term), String(io), xn(fee), String(inHouse), '', '', '', '']);
+  });
+  if (!loans.length) add(['(nincs hitel ebben a változatban)']);
+  var firstLoan = loans.length ? loanRow[loans[0].key] : 0, lastLoan = loans.length ? loanRow[loans[loans.length-1].key] : 0;
+  add([]);
+
+  /* events */
+  add(['ESEMÉNYEK (elengedés és törlesztési szünet; új sorokat a táblázat aljáig felvehetsz)']);
+  var rEvH = add(['Hónap','Hitel','Típus','Összeg','Szünet (hó)','Szünet vége']);
+  var labelOf = {}; loans.forEach(function(l){ labelOf[l.key]=l.label; });
+  var evs = [];
+  r.events.forEach(function(e){
+    if (!e.loan || !labelOf[e.loan]) return;
+    if (e.type==='forgive') evs.push([e.month, labelOf[e.loan], 'Elengedés', e.amount, 0]);
+    if (e.type==='suspend') evs.push([e.month, labelOf[e.loan], 'Szünet', 0, e.months]);
+    if (e.type==='forgive' && e.months) evs.push([e.month, labelOf[e.loan], 'Szünet', 0, e.months]);
+  });
+  var EV_ROWS = Math.max(evs.length + 10, 15);
+  var evStart = rEvH + 1, evEnd = rEvH + EV_ROWS;
+  for (var i=0;i<EV_ROWS;i++){
+    var e = evs[i], rn = rEvH + 1 + i;
+    if (e) add([String(e[0]), e[1], e[2], xn(e[3]), String(e[4]), '=HA(E'+rn+'>0;A'+rn+'+E'+rn+'-1;"")']);
+    else add(['', '', '', '', '', '=HA(E'+rn+'>0;A'+rn+'+E'+rn+'-1;"")']);
+  }
+  add(['Típus értéke: „Elengedés” vagy „Szünet”. A hitel neve egyezzen a HITELEK tábla első oszlopával.']);
+  add(['Egyszerűsítés: a CSOK Plusz szünet alatti kamata és a Babaváró 5 év utáni kamatozóvá válása itt nincs benne.']);
+  add([]);
+
+  var EVM = '$A$'+evStart+':$A$'+evEnd, EVL = '$B$'+evStart+':$B$'+evEnd, EVT = '$C$'+evStart+':$C$'+evEnd,
+      EVA = '$D$'+evStart+':$D$'+evEnd, EVV = '$F$'+evStart+':$F$'+evEnd;
+
+  add(['Ellenőrzés (Lakáshitel Lab): induló törlesztő', xn(r.initialPayment), 'kamat és díj összesen', xn(r.totals.interest + r.totals.fees), 'elengedés összesen', xn(r.totals.forgiven)]);
+  add([]);
+  /* monthly table */
+  add(['HAVI TÁBLÁZAT (mindhárom sor ugyanaz a képlet: jelöld ki az utolsót vagy mindet, és húzd lefelé)']);
+  var PER = 6; // Nyitó, Elengedés, Kamat, Törlesztő, Záró, Hátralévő hó
+  var group = ['', ''];
+  var head = ['Hónap', 'Év'];
+  loans.forEach(function(l){ group.push(l.label,'','','','',''); head.push('Nyitó tartozás','Elengedés','Kamat és díj','Törlesztő','Záró tartozás','Hátralévő hó'); });
+  group.push('Összesen',''); head.push('Havi törlesztő','Teljes tartozás');
+  add(group);
+  var rHead = add(head);
+  var mStart = rHead + 1, SPAN = 600, mEnd = mStart + SPAN - 1;
+  for (var k=0;k<3;k++){
+    var rn = mStart + k, row = [];
+    row.push('=SOR()-SOR($A$'+rHead+')');
+    row.push('=KEREKÍTÉS.FEL(A'+rn+'/12;0)');
+    var payCells = [], closeCells = [];
+    loans.forEach(function(l, li){
+      var L = loanRow[l.key];
+      var c0 = 3 + li*PER;
+      var cN = colL(c0), cE = colL(c0+1), cK = colL(c0+2), cT = colL(c0+3), cZ = colL(c0+4), cH = colL(c0+5);
+      var N = cN+rn, Eh = cE+rn, K = cK+rn, T = cT+rn, Z = cZ+rn, H = cH+rn;
+      var name = '$A$'+L;
+      var rate = 'HA(VAGY($E$'+L+'=0;$A'+rn+'<=$E$'+L+');$C$'+L+';$D$'+L+')';
+      var pause = '(DARABHATÖBB('+EVL+';'+name+';'+EVT+';"Szünet";'+EVM+';"<="&$A'+rn+';'+EVV+';">="&$A'+rn+')>0)';
+      var bal = '('+N+'-'+Eh+')';
+      var hStart = 'HA($A'+rn+'=1;$F$'+L+';'+cH+(rn-1)+')';
+      row.push('=HA($A'+rn+'=1;$B$'+L+';'+cZ+(rn-1)+')');
+      row.push('=MIN('+N+';SZUMHATÖBB('+EVA+';'+EVL+';'+name+';'+EVT+';"Elengedés";'+EVM+';$A'+rn+'))');
+      row.push('=HA('+pause+';0;'+bal+'*('+rate+'+$H$'+L+')/12)');
+      row.push('=HA(VAGY('+bal+'<0,5;'+pause+');0;HA($A'+rn+'<=$G$'+L+';'+K+';RÉSZLET('+rate+'/12;MAX(1;'+hStart+');-'+bal+')+'+bal+'*$H$'+L+'/12))');
+      row.push('=MAX(0;'+bal+'-HA('+T+'=0;0;'+T+'-'+K+'))');
+      row.push('='+hStart+'-HA(ÉS('+T+'>0;$A'+rn+'>$G$'+L+');1;0)');
+      payCells.push(T); closeCells.push(Z);
+    });
+    row.push(payCells.length ? '='+payCells.join('+') : '0');
+    row.push(closeCells.length ? '='+closeCells.join('+') : '0');
+    add(row);
+  }
+  add([]);
+
+  /* back-fill formulas that need the table positions */
+  var totalCol = colL(3 + loans.length*PER);
+  rows[rLoansIn-1][1] = loans.length ? '=SZUMHA($I$'+firstLoan+':$I$'+lastLoan+';1;$B$'+firstLoan+':$B$'+lastLoan+')' : '0';
+  rows[rPay1-1][1] = '='+totalCol+mStart;
+  loans.forEach(function(l, li){
+    var L = loanRow[l.key], c0 = 3 + li*PER;
+    var rngK = colL(c0+2)+mStart+':'+colL(c0+2)+mEnd, rngE = colL(c0+1)+mStart+':'+colL(c0+1)+mEnd, rngZ = colL(c0+4)+mStart+':'+colL(c0+4)+mEnd;
+    rows[L-1][9] = '='+colL(c0+3)+mStart;
+    rows[L-1][10] = '=SZUM('+rngK+')';
+    rows[L-1][11] = '=SZUM('+rngE+')';
+    rows[L-1][12] = '=HA(DARAB('+rngZ+')=0;"";INDEX('+rngZ+';DARAB('+rngZ+')))';
+  });
+  return rows.map(function(rw){ return rw.join('\t'); }).join('\r\n');
+}
+
+var xlPanel = document.getElementById('xlPanel');
+function copyText(text, statusEl, okMsg){
+  var ta = document.getElementById('xlText'); ta.value = text;
+  function fallback(){ ta.focus(); ta.select(); statusEl.textContent = 'A böngésző nem engedte a vágólapot. A szöveg ki van jelölve: másold ki Ctrl+C-vel.'; }
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(function(){ statusEl.textContent = okMsg; toast('Vágólapra másolva'); }, fallback);
+  } else fallback();
+}
+document.getElementById('btnExcel').addEventListener('click', function(){
+  var t = buildExcel();
+  xlPanel.hidden = false;
+  copyText(t, document.getElementById('xlStatus'), 'Vágólapra másolva ('+t.split('\r\n').length+' sor). Illeszd be az A1 cellába.');
+});
+document.getElementById('xlCopy').addEventListener('click', function(){
+  copyText(document.getElementById('xlText').value || buildExcel(), document.getElementById('xlStatus'), 'Újra a vágólapon.');
+});
+document.getElementById('xlClose').addEventListener('click', function(){ xlPanel.hidden = true; });
+window.__buildExcel = buildExcel; window.__getState = function(){ return JSON.parse(JSON.stringify(state)); };
+
+document.getElementById('realToggle').addEventListener('change', function(){ realView = this.checked; run(); });
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(){ renderFunding(); renderChart(); });
+new MutationObserver(function(){ renderFunding(); renderChart(); }).observe(document.documentElement, {attributes:true, attributeFilter:['data-theme']});
+
+/* ---------------- boot ---------------- */
+renderPresets(); buildControls(); renderTabs(); listSaved(); run();
+
+(async function(){
+  if (!window.claude || !window.claude.use) return;
+  try {
+    var db = await window.claude.use('db');
+    var user = await window.claude.use('user');
+    if (db && user){
+      var id = await user.id();
+      if (id){ store = { kind:'db', db:db, col:'data/users/'+id+'/scenarios' }; }
+      listSaved();
+    }
+  } catch(e){}
+})();
+})();
+</script>
+
+</body></html>
